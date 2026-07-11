@@ -1,0 +1,293 @@
+/* Supplementary styles for the React port (form sections, grids, modal,
+   spinner, admin list). Uses the design tokens from style.css / admin.css. */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 20px;
+}
+
+/* Forms */
+.form-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.form-section {
+  margin-bottom: 26px;
+}
+
+.form-section > h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.field .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.participant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+}
+
+.participant-grid .field {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.equipment-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
+  transition: all 0.15s;
+}
+
+.checkbox-chip input {
+  accent-color: var(--primary-color);
+}
+
+.checkbox-chip.checked {
+  border-color: var(--primary-color);
+  background: #f0f7ff;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.agree-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+}
+
+.agree-box input {
+  accent-color: var(--primary-color);
+  width: 18px;
+  height: 18px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.timeline-scale .timeline-label {
+  flex: 1;
+}
+
+/* Timeline note */
+.timeline-note {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  margin-top: 10px;
+}
+
+/* Complete page */
+.complete-card {
+  max-width: 520px;
+  margin: 40px auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.complete-card .check-circle {
+  width: 72px;
+  height: 72px;
+  color: var(--success);
+  margin: 0 auto 16px;
+}
+
+.summary-box {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 24px 0;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.summary-box .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.summary-box .row span:first-child {
+  color: var(--text-sub);
+}
+
+.notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 0.85rem;
+  margin: 20px 0;
+}
+
+/* Status pills */
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.status-pill.pending { background: #fef3c7; color: #92400e; }
+.status-pill.confirmed { background: #dcfce7; color: #166534; }
+.status-pill.cancelled { background: #f1f5f9; color: #64748b; }
+.status-pill.rejected { background: #fee2e2; color: #991b1b; }
+
+/* Loading / empty */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 60px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  text-align: center;
+  color: var(--text-sub);
+  padding: 50px 20px;
+}
+
+/* Admin list table + date nav */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.admin-table th {
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  border-bottom: 2px solid var(--border-color);
+}
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+.admin-table tr.deleted { opacity: 0.55; }
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-nav input[type="date"] {
+  width: auto;
+  margin-top: 0;
+}
+
+.calendar-box {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-top: 24px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  width: 90%;
+  max-width: 440px;
+}
+.modal h3 { margin-top: 0; }
+
+.inline-actions { display: flex; gap: 8px; }
+
+/* Auth login card */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-bg, #f1f5f9);
+}
+.login-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  width: 90%;
+  max-width: 380px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
