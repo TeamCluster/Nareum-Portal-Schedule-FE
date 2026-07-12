@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { useOrg } from "../hooks/useOrg";
 import type { DayConfig, Facility } from "../api/types";
 import { formatPhoneNumber } from "../lib/phone";
+import { facilityTypeMeta } from "../lib/facilityTypes";
 import TimeSlotPicker from "../components/TimeSlotPicker";
 
 const EQUIPMENT = ["앰프", "스피커", "마이크", "키보드"];
@@ -51,7 +52,7 @@ export default function ReservePage() {
     api.get<DayConfig>(`/day-config?date=${date}`).then(setDayCfg);
   }, [facilityId, date, navigate]);
 
-  const isPractice = facility?.type.includes("연습") ?? false;
+  const isPractice = facility ? facilityTypeMeta(facility.type).equipment : false;
   const totalParticipants = Object.values(participants).reduce((a, b) => a + (b || 0), 0);
   const canSubmit = hours.length > 0 && agree;
 

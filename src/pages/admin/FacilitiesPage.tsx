@@ -2,9 +2,17 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { ApiError, assetUrl } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
 import type { Facility } from "../../api/types";
+import { FACILITY_TYPES } from "../../lib/facilityTypes";
 
 const EMPTY = { name: "", type: "", capacity: "", description: "" };
 type FormState = typeof EMPTY;
+
+/** 예약 페이지 픽토그램이 유형에 매핑되므로 유형은 사전 정의 목록에서 선택.
+ *  기존(레거시) 커스텀 유형이 있으면 그 값도 옵션에 포함해 유지. */
+function typeOptions(current: string): string[] {
+  const vals = FACILITY_TYPES.map((t) => t.value);
+  return current && !vals.includes(current) ? [current, ...vals] : vals;
+}
 
 export default function FacilitiesPage() {
   const { api } = useOrg();
@@ -126,8 +134,13 @@ export default function FacilitiesPage() {
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="field">
-              <label>유형<span className="required">*</span> (연습실/활동실/회의실 등)</label>
-              <input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required />
+              <label>유형<span className="required">*</span> (예약 페이지 아이콘이 유형에 맞게 표시됨)</label>
+              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required>
+                <option value="">유형 선택</option>
+                {FACILITY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.value}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="field-row">
@@ -224,7 +237,11 @@ export default function FacilitiesPage() {
             </div>
             <div className="field">
               <label>유형</label>
-              <input value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })} />
+              <select value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}>
+                {typeOptions(editForm.type).map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
             </div>
             <div className="field">
               <label>수용 인원</label>
