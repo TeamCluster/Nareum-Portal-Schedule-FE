@@ -6,6 +6,13 @@ import type { Availability } from "../api/types";
 
 const HOURS = Array.from({ length: 9 }, (_, i) => 9 + i); // 9..17
 
+/** Local (no external network) placeholder image for facilities without one. */
+function placeholderImage(label: string): string {
+  const text = (label || "나름센터").slice(0, 12);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#eef1f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="20" fill="#9aa3b2">${text}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function PracticeIcon() {
   return (
     <svg className="type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -83,8 +90,12 @@ export default function HomePage() {
               <article key={f.id} className="facility-card">
                 <div className="card-image">
                   <img
-                    src={assetUrl(f.image_url) || `https://via.placeholder.com/400x200?text=${f.name}`}
+                    src={assetUrl(f.image_url) || placeholderImage(f.name)}
                     alt={f.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = placeholderImage(f.name);
+                    }}
                   />
                   <span className="facility-type-badge">{f.type}</span>
                 </div>
