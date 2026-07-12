@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { ApiError } from "../api/client";
+import { useOrg } from "../hooks/useOrg";
 import type { Facility } from "../api/types";
 import { formatPhoneNumber } from "../lib/phone";
 import TimeSlotPicker from "../components/TimeSlotPicker";
@@ -15,6 +16,7 @@ const PARTICIPANT_FIELDS: { key: string; label: string }[] = [
 ];
 
 export default function ReservePage() {
+  const { base, api } = useOrg();
   const { facilityId } = useParams();
   const [params] = useSearchParams();
   const date = params.get("date") || "";
@@ -35,7 +37,7 @@ export default function ReservePage() {
 
   useEffect(() => {
     if (!date) {
-      navigate("/");
+      navigate(base);
       return;
     }
     api.get<Facility[]>("/facilities").then((list) => {
@@ -76,7 +78,7 @@ export default function ReservePage() {
         participants,
         equipment: isPractice ? equipment : [],
       });
-      navigate(`/complete/${res.access_id}`);
+      navigate(`${base}/complete/${res.access_id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "예약에 실패했습니다.");
       setSubmitting(false);
@@ -187,7 +189,7 @@ export default function ReservePage() {
       </div>
 
       <div className="form-actions">
-        <Link className="btn btn-check" to={`/?date=${date}`}>
+        <Link className="btn btn-check" to={`${base}?date=${date}`}>
           돌아가기
         </Link>
         <button

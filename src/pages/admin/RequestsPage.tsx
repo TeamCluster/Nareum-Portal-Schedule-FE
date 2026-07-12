@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, ApiError } from "../../api/client";
+import { ApiError } from "../../api/client";
+import { useOrg } from "../../hooks/useOrg";
 import type { Reservation } from "../../api/types";
 import { dateOf, formatTime } from "../../lib/datetime";
 
@@ -12,6 +13,7 @@ const PRESET_REASONS = [
 ];
 
 export default function RequestsPage() {
+  const { base, api } = useOrg();
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectTarget, setRejectTarget] = useState<Reservation | null>(null);
@@ -76,7 +78,7 @@ export default function RequestsPage() {
                   {dateOf(r.start_time)} {formatTime(r.start_time)}~{formatTime(r.end_time)}
                 </td>
                 <td>
-                  <Link to={`/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
+                  <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
                     {r.applicant_name}
                   </Link>
                   <br />

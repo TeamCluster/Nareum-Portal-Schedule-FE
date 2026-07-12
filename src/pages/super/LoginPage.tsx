@@ -1,10 +1,9 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
-import { useOrg } from "../../hooks/useOrg";
+import { superApi } from "../../api/super";
 
-export default function LoginPage() {
-  const { base, api } = useOrg();
+export default function SuperLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,8 +14,8 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await api.post("/admin/login", { password });
-      navigate(`${base}/manage`);
+      await superApi.login(password);
+      navigate("/super");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "로그인에 실패했습니다.");
       setLoading(false);
@@ -26,9 +25,9 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
-        <h2 style={{ marginTop: 0 }}>관리자 로그인</h2>
+        <h2 style={{ marginTop: 0 }}>슈퍼 관리자 로그인</h2>
         <p style={{ color: "var(--text-sub)", fontSize: "0.9rem" }}>
-          나름센터 대관 관리 페이지
+          전체 기관 관리 콘솔
         </p>
         {error && (
           <ul className="flash-messages">
@@ -38,7 +37,7 @@ export default function LoginPage() {
         <div className="field">
           <input
             type="password"
-            placeholder="비밀번호"
+            placeholder="슈퍼 비밀번호"
             value={password}
             autoFocus
             onChange={(e) => setPassword(e.target.value)}
@@ -48,11 +47,6 @@ export default function LoginPage() {
         <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
           {loading ? "확인 중..." : "접속하기"}
         </button>
-        <p style={{ marginTop: 16 }}>
-          <a href={base} style={{ color: "var(--primary-color)", fontSize: "0.85rem" }}>
-            ← 기관 홈페이지로
-          </a>
-        </p>
       </form>
     </div>
   );

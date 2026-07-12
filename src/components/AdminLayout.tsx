@@ -1,39 +1,41 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { api } from "../api/client";
-
-const links = [
-  { to: "/manage", label: "대시보드", end: true },
-  { to: "/manage/requests", label: "승인 요청", end: false },
-  { to: "/manage/list", label: "전체 예약 목록", end: false },
-  { to: "/manage/add", label: "예약 직접 추가", end: false },
-];
+import { useOrg } from "../hooks/useOrg";
+import type { PlaceInfo } from "../api/types";
 
 export default function AdminLayout() {
+  const { slug, base, api } = useOrg();
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState<number>(0);
+  const [info, setInfo] = useState<PlaceInfo | null>(null);
+
+  const links = [
+    { to: base + "/manage", label: "대시보드", end: true },
+    { to: base + "/manage/requests", label: "승인 요청", end: false },
+    { to: base + "/manage/list", label: "전체 예약 목록", end: false },
+    { to: base + "/manage/add", label: "예약 직접 추가", end: false },
+    { to: base + "/manage/facilities", label: "시설 관리", end: false },
+  ];
 
   useEffect(() => {
-    api
-      .get<{ pending_count: number }>("/admin/dashboard")
-      .then((d) => setPendingCount(d.pending_count))
-      .catch(() => {});
-  }, []);
+    api.get<{ pending_count: number }>("/admin/dashboard").then((d) => setPendingCount(d.pending_count)).catch(() => {});
+    api.get<PlaceInfo>("/info").then(setInfo).catch(() => {});
+  }, [slug]);
 
   async function logout() {
     await api.post("/admin/logout");
-    navigate("/manage/login");
+    navigate(`${base}/manage/login`);
   }
 
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="brand">나름센터 관리자</div>
+        <div className="brand">{info?.short_name || slug} 관리자</div>
         <nav className="admin-nav">
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end}>
               <span>{l.label}</span>
-              {l.to === "/manage/requests" && pendingCount > 0 && (
+              {l.label === "승인 요청" && pendingCount > 0 && (
                 <span className="badge badge-warning" style={{ marginLeft: "auto" }}>
                   {pendingCount}
                 </span>
@@ -45,10 +47,10 @@ export default function AdminLayout() {
 
       <div className="admin-main">
         <header className="admin-header">
-          <strong>관리자 페이지</strong>
+          <strong>{info?.full_name || slug} · 관리자 페이지</strong>
           <div className="header-actions">
-            <a className="btn btn-check" href="/" target="_blank" rel="noreferrer">
-              센터 홈페이지
+            <a className="btn btn-check" href={base} target="_blank" rel="noreferrer">
+              기관 홈페이지
             </a>
             <button className="btn btn-admin" onClick={logout}>
               로그아웃

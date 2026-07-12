@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../api/client";
+import { useOrg } from "../hooks/useOrg";
 import type { Reservation } from "../api/types";
 import { formatKoreanDate, formatTime } from "../lib/datetime";
 
 export default function CompletePage() {
+  const { base, api } = useOrg();
   const { accessId } = useParams();
   const [res, setRes] = useState<Reservation | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -52,10 +53,10 @@ export default function CompletePage() {
       </div>
 
       <div className="form-actions" style={{ justifyContent: "center" }}>
-        <Link className="btn btn-check" to="/">
+        <Link className="btn btn-check" to={base}>
           메인으로 이동
         </Link>
-        <Link className="btn btn-primary" to="/check">
+        <Link className="btn btn-primary" to={`${base}/check`}>
           예약 확인하기
         </Link>
       </div>

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, ApiError } from "../../api/client";
+import { ApiError } from "../../api/client";
+import { useOrg } from "../../hooks/useOrg";
 import type { Facility, Reservation, ReservationStatus } from "../../api/types";
 import { dateOf, hourOf } from "../../lib/datetime";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
@@ -14,6 +15,7 @@ const STATUS_OPTIONS: { value: ReservationStatus; label: string }[] = [
 ];
 
 export default function EditPage() {
+  const { api } = useOrg();
   const { resId } = useParams();
   const navigate = useNavigate();
 

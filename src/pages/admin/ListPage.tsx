@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../../api/client";
+import { useOrg } from "../../hooks/useOrg";
 import type { Reservation } from "../../api/types";
 import { dateOf, formatTime } from "../../lib/datetime";
 
@@ -12,6 +12,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 export default function ListPage() {
+  const { base, api } = useOrg();
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +57,7 @@ export default function ListPage() {
                   <td>{r.applicant_name}</td>
                   <td>{r.applicant_contact}</td>
                   <td>
-                    <Link to={`/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
+                    <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
                       수정
                     </Link>
                   </td>

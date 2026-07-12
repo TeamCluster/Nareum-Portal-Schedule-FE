@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, ApiError } from "../../api/client";
+import { ApiError } from "../../api/client";
+import { useOrg } from "../../hooks/useOrg";
 import type { Facility } from "../../api/types";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
 import ReservationFields, { ApplicantState } from "../../components/ReservationFields";
@@ -15,6 +16,7 @@ const EMPTY: ApplicantState = {
 };
 
 export default function AddPage() {
+  const { base, api } = useOrg();
   const navigate = useNavigate();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState("");
@@ -58,7 +60,7 @@ export default function AddPage() {
         hours,
         ...fields,
       });
-      navigate("/manage");
+      navigate(`${base}/manage`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "예약 추가에 실패했습니다.");
       setSubmitting(false);
@@ -107,7 +109,7 @@ export default function AddPage() {
       </div>
 
       <div className="form-actions">
-        <button type="button" className="btn btn-check" onClick={() => navigate("/manage")}>
+        <button type="button" className="btn btn-check" onClick={() => navigate(`${base}/manage`)}>
           취소
         </button>
         <button type="submit" className="btn btn-primary" disabled={submitting} style={{ flex: 1 }}>

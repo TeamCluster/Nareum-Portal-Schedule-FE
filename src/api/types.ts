@@ -1,3 +1,5 @@
+// 백엔드 응답 타입 = API 계약. 백엔드 to_dict/서비스가 바뀌면 여기부터 동기화.
+
 export interface Facility {
   id: number;
   name: string;
@@ -72,4 +74,28 @@ export interface AppConfig {
   service_name: string;
   booking_min_days: number;
   booking_max_days: number;
+}
+
+// --- 멀티테넌트 ---------------------------------------------------------
+
+/** 기관 공개 정보 (헤더/푸터 표기용). GET /api/<slug>/info */
+export interface PlaceInfo {
+  slug: string;
+  full_name: string;
+  short_name: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+/** 슈퍼 관리자 기관 목록 항목. GET /api/super/places */
+export interface Place {
+  id: number;
+  slug: string;
+  full_name: string;
+  short_name: string;
+  address: string;
+  phone: string;
+  email: string;
+  created_at: string;
 }

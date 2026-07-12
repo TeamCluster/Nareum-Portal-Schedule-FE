@@ -1,16 +1,42 @@
+import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { assetUrl } from "../api/client";
+import { useOrg } from "../hooks/useOrg";
+import type { PlaceInfo } from "../api/types";
 
 export default function PublicLayout() {
+  const { slug, base, api } = useOrg();
+  const [info, setInfo] = useState<PlaceInfo | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    setNotFound(false);
+    api
+      .get<PlaceInfo>("/info")
+      .then(setInfo)
+      .catch(() => setNotFound(true));
+  }, [slug]);
+
+  if (notFound) {
+    return (
+      <div className="empty-state" style={{ margin: "80px auto", maxWidth: 520 }}>
+        <h2>기관을 찾을 수 없습니다.</h2>
+        <p style={{ color: "var(--text-sub)" }}>
+          안내받은 기관 주소(예: <code>/nareum</code>)로 접속해 주세요.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <header className="header-top">
         <div className="container header-container">
-          <Link to="/">
-            <img className="logo-img" src={assetUrl("/static/img/logo_nareum.png")} alt="나름센터" />
+          <Link to={base}>
+            <img className="logo-img" src={assetUrl("/static/img/logo_nareum.png")} alt={info?.short_name || "센터"} />
           </Link>
           <div className="header-actions">
-            <Link className="btn btn-check" to="/check">
+            <Link className="btn btn-check" to={`${base}/check`}>
               내 예약 확인
             </Link>
           </div>
@@ -24,15 +50,14 @@ export default function PublicLayout() {
       <footer>
         <div className="container">
           <div className="footer-content">
-            {/* TODO(배포): 아래 주소/전화/이메일을 실제 센터 정보로 교체할 것 (현재 placeholder) */}
             <div className="footer-info">
-              <h3>나름청소년활동센터</h3>
-              <p>주소: 경기도 나름시 청소년로 123</p>
+              <h3>{info?.full_name || " "}</h3>
+              {info?.address && <p>주소: {info.address}</p>}
               <p>운영시간: 평일 09:00 ~ 18:00</p>
             </div>
             <div className="footer-info footer-contact">
-              <p>전화: 031-000-0000</p>
-              <p>이메일: nareum@example.com</p>
+              {info?.phone && <p>전화: {info.phone}</p>}
+              {info?.email && <p>이메일: {info.email}</p>}
             </div>
           </div>
           <div className="footer-copyright">© 2026 Cluster. All rights reserved.</div>

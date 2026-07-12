@@ -3,11 +3,12 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { api } from "../../api/client";
+import { useOrg } from "../../hooks/useOrg";
 import type { CalendarEvent, DashboardData } from "../../api/types";
 import { formatTime } from "../../lib/datetime";
 
 export default function DashboardPage() {
+  const { base, api } = useOrg();
   const [params, setParams] = useSearchParams();
   const date = params.get("date") || "";
   const [data, setData] = useState<DashboardData | null>(null);
@@ -34,7 +35,7 @@ export default function DashboardPage() {
         <div className="box">
           <h3>
             승인 대기
-            <Link to="/manage/requests" style={{ fontSize: "0.8rem", color: "var(--primary-color)" }}>
+            <Link to={`${base}/manage/requests`} style={{ fontSize: "0.8rem", color: "var(--primary-color)" }}>
               전체 보기
             </Link>
           </h3>
@@ -64,7 +65,7 @@ export default function DashboardPage() {
           <h3>
             일자별 예약 현황
             <span className="date-nav">
-              <Link className="btn btn-check" to={`/manage?date=${data.prev_date}`}>
+              <Link className="btn btn-check" to={`${base}/manage?date=${data.prev_date}`}>
                 ‹
               </Link>
               <input
@@ -72,7 +73,7 @@ export default function DashboardPage() {
                 value={data.selected_date}
                 onChange={(e) => setParams({ date: e.target.value })}
               />
-              <Link className="btn btn-check" to={`/manage?date=${data.next_date}`}>
+              <Link className="btn btn-check" to={`${base}/manage?date=${data.next_date}`}>
                 ›
               </Link>
             </span>
@@ -110,7 +111,7 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td>
-                        <Link to={`/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
+                        <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
                           관리
                         </Link>
                       </td>
@@ -139,7 +140,7 @@ export default function DashboardPage() {
           events={events.map((e) => ({ ...e, id: String(e.id) }))}
           eventClick={(info) => {
             info.jsEvent.preventDefault();
-            navigate(`/manage/edit/${info.event.id}`);
+            navigate(`${base}/manage/edit/${info.event.id}`);
           }}
         />
       </div>

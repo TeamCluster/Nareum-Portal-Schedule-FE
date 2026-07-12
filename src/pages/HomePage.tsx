@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api } from "../api/client";
 import { assetUrl } from "../api/client";
+import { useOrg } from "../hooks/useOrg";
 import type { Availability } from "../api/types";
 
 const HOURS = Array.from({ length: 9 }, (_, i) => 9 + i); // 9..17
@@ -34,6 +34,7 @@ function GroupIcon() {
 }
 
 export default function HomePage() {
+  const { slug, base, api } = useOrg();
   const [params, setParams] = useSearchParams();
   const selectedDate = params.get("date") || "";
   const [data, setData] = useState<Availability | null>(null);
@@ -45,7 +46,7 @@ export default function HomePage() {
       .get<Availability>(`/availability${selectedDate ? `?date=${selectedDate}` : ""}`)
       .then(setData)
       .finally(() => setLoading(false));
-  }, [selectedDate]);
+  }, [selectedDate, slug]);
 
   function onDateChange(value: string) {
     if (value) setParams({ date: value });
@@ -137,7 +138,7 @@ export default function HomePage() {
                   ) : (
                     <Link
                       className="btn btn-primary btn-full"
-                      to={`/reserve/${f.id}?date=${selectedDate}`}
+                      to={`${base}/reserve/${f.id}?date=${selectedDate}`}
                       style={{ pointerEvents: reservable ? "auto" : "none" }}
                     >
                       대관 신청하기

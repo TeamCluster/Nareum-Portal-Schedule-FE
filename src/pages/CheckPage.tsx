@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { api, ApiError } from "../api/client";
+import { ApiError } from "../api/client";
+import { useOrg } from "../hooks/useOrg";
 import type { Reservation } from "../api/types";
 import { formatPhoneNumber } from "../lib/phone";
 import { dateOf, formatTime } from "../lib/datetime";
@@ -12,6 +13,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function CheckPage() {
+  const { api } = useOrg();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [reservations, setReservations] = useState<Reservation[] | null>(null);
