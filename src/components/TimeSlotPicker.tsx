@@ -12,6 +12,8 @@ interface Props {
   disabledMessage?: string;
   openHour?: number;
   closeHour?: number;
+  /** 정기 고정활동 시각(소프트): 선택은 가능하되 경고 표시(관리자 직접 추가용). */
+  blockedHours?: number[];
 }
 
 export default function TimeSlotPicker({
@@ -24,11 +26,13 @@ export default function TimeSlotPicker({
   disabledMessage = "시설과 날짜를 먼저 선택해주세요.",
   openHour = 9,
   closeHour = 18,
+  blockedHours = [],
 }: Props) {
   const OPEN_HOUR = openHour;
   const CLOSE_HOUR = closeHour;
   const HOURS = Array.from({ length: Math.max(0, CLOSE_HOUR - OPEN_HOUR) }, (_, i) => OPEN_HOUR + i);
   const booked = new Set(bookedHours);
+  const blocked = new Set(blockedHours);
   const selected = new Set(value);
 
   function handleClick(hour: number) {
@@ -88,20 +92,23 @@ export default function TimeSlotPicker({
       <div className="timeline-bar">
         {HOURS.map((h) => {
           const isBooked = booked.has(h);
+          const isBlocked = !isBooked && blocked.has(h);
           const isSelected = selected.has(h);
           const cls = `time-slot-block${isBooked ? " booked" : ""}${
-            isSelected ? " selected" : ""
-          }`;
+            isBlocked ? " blocked" : ""
+          }${isSelected ? " selected" : ""}`;
           return (
             <div
               key={h}
               className={cls}
-              title={`${h}:00 ~ ${h + 1}:00`}
+              title={isBlocked ? `${h}:00 ~ ${h + 1}:00 · 정기 고정활동(선택 시 경고)` : `${h}:00 ~ ${h + 1}:00`}
               onClick={() => handleClick(h)}
               style={disabled && !isBooked ? { cursor: "not-allowed", opacity: 0.5 } : undefined}
             >
               {isBooked ? (
                 <span className="status-label">마감</span>
+              ) : isBlocked ? (
+                <span className="status-label">정기</span>
               ) : (
                 <span className="status-label">{String(h).padStart(2, "0")}</span>
               )}

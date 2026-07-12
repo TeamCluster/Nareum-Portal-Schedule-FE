@@ -22,6 +22,7 @@ export default function AddPage() {
   const [facilityId, setFacilityId] = useState("");
   const [date, setDate] = useState("");
   const [bookedHours, setBookedHours] = useState<number[]>([]);
+  const [blockedHours, setBlockedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
   const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
   const [fields, setFields] = useState<ApplicantState>(EMPTY);
@@ -46,10 +47,12 @@ export default function AddPage() {
       return;
     }
     api
-      .get<number[]>(`/admin/booked-times?facility_id=${facilityId}&date=${date}`)
-      .then((b) => {
-        setBookedHours(b);
-        setHours((prev) => prev.filter((h) => !b.includes(h)));
+      .get<{ reserved: number[]; blocked: number[] }>(
+        `/admin/booked-times?facility_id=${facilityId}&date=${date}`)
+      .then((d) => {
+        setBookedHours(d.reserved);
+        setBlockedHours(d.blocked);
+        setHours((prev) => prev.filter((h) => !d.reserved.includes(h)));
       });
   }, [facilityId, date]);
 
@@ -63,12 +66,15 @@ export default function AddPage() {
 
     setSubmitting(true);
     try {
-      await api.post("/admin/reservations", {
+      const res = await api.post<{ warnings?: string[] }>("/admin/reservations", {
         facility_id: Number(facilityId),
         date,
         hours,
         ...fields,
       });
+      if (res.warnings?.length) {
+        alert("아래 경고가 있으나 예약이 추가되었습니다:\n\n- " + res.warnings.join("\n- "));
+      }
       navigate(`${base}/manage`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "예약 추가에 실패했습니다.");
@@ -107,6 +113,7 @@ export default function AddPage() {
           </div>
           <TimeSlotPicker
             bookedHours={bookedHours}
+            blockedHours={blockedHours}
             value={hours}
             onChange={setHours}
             autoFillRange
@@ -116,7 +123,12 @@ export default function AddPage() {
           />
           {dayCfg && !dayCfg.is_open && (
             <p className="timeline-note" style={{ color: "var(--danger)" }}>
-              ⚠ 선택한 날짜는 휴무일입니다{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}. 저장 시 거부될 수 있습니다.
+              ⚠ 선택한 날짜는 휴무일입니다{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}. 직접 추가는 가능하나 경고가 표시됩니다.
+            </p>
+          )}
+          {hours.some((h) => blockedHours.includes(h)) && (
+            <p className="timeline-note" style={{ color: "#6366f1" }}>
+              ⚠ 정기 고정활동과 겹치는 시간을 선택했습니다. 직접 추가는 가능하나 경고가 표시됩니다.
             </p>
           )}
         </div>

@@ -391,6 +391,15 @@ textarea:focus {
     cursor: not-allowed;
 }
 
+.time-slot-block.blocked {
+    /* 정기 고정활동: 선택 가능하되 경고(보라 빗금 느낌) */
+    background-color: #eef2ff;
+    color: #6366f1;
+    background-image: repeating-linear-gradient(
+        45deg, transparent, transparent 5px,
+        rgba(99, 102, 241, 0.15) 5px, rgba(99, 102, 241, 0.15) 10px);
+}
+
 .time-slot-block.selected {
     background-color: var(--warning);
     /* 주황색 (선택됨) */

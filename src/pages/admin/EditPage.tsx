@@ -24,6 +24,7 @@ export default function EditPage() {
   const [facilityId, setFacilityId] = useState("");
   const [date, setDate] = useState("");
   const [bookedHours, setBookedHours] = useState<number[]>([]);
+  const [blockedHours, setBlockedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
   const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
   const [fields, setFields] = useState<ApplicantState>({
@@ -66,10 +67,13 @@ export default function EditPage() {
   useEffect(() => {
     if (!facilityId || !date) return;
     api
-      .get<number[]>(
+      .get<{ reserved: number[]; blocked: number[] }>(
         `/admin/booked-times?facility_id=${facilityId}&date=${date}&exclude_res_id=${resId}`,
       )
-      .then(setBookedHours);
+      .then((d) => {
+        setBookedHours(d.reserved);
+        setBlockedHours(d.blocked);
+      });
     api.get<DayConfig>(`/day-config?date=${date}`).then(setDayCfg);
   }, [facilityId, date, resId]);
 
@@ -81,7 +85,7 @@ export default function EditPage() {
 
     setSubmitting(true);
     try {
-      const res = await api.put<{ message: string }>(`/admin/reservations/${resId}`, {
+      const res = await api.put<{ message: string; warnings?: string[] }>(`/admin/reservations/${resId}`, {
         facility_id: Number(facilityId),
         date,
         hours,
@@ -89,7 +93,7 @@ export default function EditPage() {
         reject_reason: rejectReason,
         ...fields,
       });
-      setMessage(res.message);
+      setMessage(res.message + (res.warnings?.length ? ` (경고: ${res.warnings.join(" / ")})` : ""));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "수정에 실패했습니다.");
     } finally {
@@ -136,12 +140,23 @@ export default function EditPage() {
           </div>
           <TimeSlotPicker
             bookedHours={bookedHours}
+            blockedHours={blockedHours}
             value={hours}
             onChange={setHours}
             autoFillRange
             openHour={dayCfg?.open_hour ?? 9}
             closeHour={dayCfg?.close_hour ?? 18}
           />
+          {dayCfg && !dayCfg.is_open && (
+            <p className="timeline-note" style={{ color: "var(--danger)" }}>
+              ⚠ 휴무일{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}로 지정된 날짜입니다. 저장은 가능하나 경고가 표시됩니다.
+            </p>
+          )}
+          {hours.some((h) => blockedHours.includes(h)) && (
+            <p className="timeline-note" style={{ color: "#6366f1" }}>
+              ⚠ 정기 고정활동과 겹치는 시간입니다. 저장은 가능하나 경고가 표시됩니다.
+            </p>
+          )}
         </div>
 
         <ReservationFields value={fields} onChange={setFields} />
