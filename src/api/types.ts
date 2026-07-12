@@ -120,6 +120,16 @@ export interface DayGrid {
   facilities: { id: number; name: string; type: string; segments: DaySegment[] }[];
 }
 
+export interface WeekGrid {
+  week_start: string;
+  prev_week: string;
+  next_week: string;
+  hour_min: number;
+  hour_max: number;
+  facilities: { id: number; name: string }[];
+  days: DayGrid[];
+}
+
 export interface CalendarEvent {
   id: number;
   title: string;

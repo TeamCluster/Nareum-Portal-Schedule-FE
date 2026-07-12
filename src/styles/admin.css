@@ -438,7 +438,151 @@
     background: #f1f5f9;
 }
 
-/* FullCalendar(주간/월간) — 앱 디자인에 맞춘 변수/스타일 오버라이드 */
+/* 캘린더 상단 툴바(주간/월간 토글 + 주 이동) */
+.cal-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cal-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-left: 6px;
+}
+
+.cal-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cal-toggle button {
+    height: 36px;
+    padding: 0 14px;
+    border: none;
+    background: white;
+    color: var(--text-sub);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+.cal-toggle button.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* 주간 시설별 리소스 그리드 */
+.week-grid-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.week-grid {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.week-grid th,
+.week-grid td {
+    border: 1px solid #eef1f5;
+    text-align: center;
+}
+
+.week-grid thead th {
+    background: #f8fafc;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 700;
+    padding: 5px 2px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.week-grid th.wg-day {
+    border-left: 2px solid var(--border-color);
+}
+
+.week-grid th.wg-day.closed {
+    color: #b91c1c;
+    background: #fef2f2;
+}
+
+.wg-day-badge {
+    margin-left: 4px;
+    font-size: 0.62rem;
+    color: #b91c1c;
+}
+
+.week-grid th.wg-fac {
+    min-width: 52px;
+    max-width: 52px;
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: #475569;
+    padding: 4px 1px;
+    line-height: 1.1;
+    word-break: keep-all;
+}
+
+.week-grid .wg-hour {
+    width: 38px;
+    min-width: 38px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 700;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.week-grid thead .wg-hour {
+    z-index: 3;
+}
+
+.wg-cell {
+    height: 30px;
+    padding: 0;
+    font-size: 0.6rem;
+    line-height: 1.05;
+    overflow: hidden;
+}
+
+.wg-cell.free { background: #ffffff; }
+.wg-cell.off { background: #f1f5f9; }         /* 그 요일 비운영 시간대 */
+.wg-cell.wg-closed { background: #f1f5f9; color: #94a3b8; font-weight: 700; }
+
+.wg-cell.res { color: #fff; cursor: pointer; }
+.wg-cell.res:hover { filter: brightness(1.08); }
+.wg-cell.res.confirmed { background: #22c55e; }
+.wg-cell.res.pending { background: #f59e0b; }
+.wg-cell.block { background: #6366f1; color: #fff; cursor: default; }
+
+.wg-cell .wg-txt {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding: 1px 2px;
+    word-break: break-all;
+}
+
+/* FullCalendar(월간) — 앱 디자인에 맞춘 변수/스타일 오버라이드 */
 .calendar-box {
     --fc-border-color: var(--border-color);
     --fc-button-bg-color: var(--primary-color);

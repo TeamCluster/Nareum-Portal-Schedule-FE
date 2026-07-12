@@ -4,8 +4,23 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { useOrg } from "../../hooks/useOrg";
-import type { CalendarEvent, DashboardData, DayGrid } from "../../api/types";
+import type { CalendarEvent, DashboardData, DayGrid, WeekGrid } from "../../api/types";
 import { formatTime } from "../../lib/datetime";
+import WeekGridView from "../../components/WeekGrid";
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function weekRangeLabel(wg: WeekGrid) {
+  const first = wg.days[0]?.date;
+  const last = wg.days[6]?.date;
+  if (!first || !last) return "";
+  const [y, m, d] = first.split("-");
+  const [, m2, d2] = last.split("-");
+  return `${y}. ${Number(m)}. ${Number(d)} ~ ${Number(m2)}. ${Number(d2)}`;
+}
 
 export default function DashboardPage() {
   const { base, api } = useOrg();
@@ -14,6 +29,9 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [grid, setGrid] = useState<DayGrid | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [calView, setCalView] = useState<"week" | "month">("week");
+  const [weekAnchor, setWeekAnchor] = useState<string>("");
+  const [weekGrid, setWeekGrid] = useState<WeekGrid | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +43,14 @@ export default function DashboardPage() {
   useEffect(() => {
     api.get<CalendarEvent[]>("/admin/calendar-events").then(setEvents);
   }, []);
+
+  // 주간 그리드: 대시보드 선택 날짜를 기준으로 시작, 이후 주 단위 이동.
+  useEffect(() => {
+    if (!weekAnchor && data) setWeekAnchor(data.selected_date);
+  }, [data, weekAnchor]);
+  useEffect(() => {
+    if (weekAnchor) api.get<WeekGrid>(`/admin/week-grid?date=${weekAnchor}`).then(setWeekGrid);
+  }, [weekAnchor]);
 
   if (!data) return <div className="spinner" />;
 
@@ -99,27 +125,56 @@ export default function DashboardPage() {
       </div>
 
       <div className="calendar-box">
-        <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin]}
-          initialView="timeGridWeek"
-          initialDate={data.selected_date}
-          locale="ko"
-          headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek" }}
-          buttonText={{ today: "오늘", month: "월간", week: "주간" }}
-          allDaySlot={false}
-          slotMinTime="09:00:00"
-          slotMaxTime="18:00:00"
-          slotDuration="01:00:00"
-          expandRows
-          dayMaxEvents={3}
-          nowIndicator
-          height="auto"
-          events={events.map((e) => ({ ...e, id: String(e.id) }))}
-          eventClick={(info) => {
-            info.jsEvent.preventDefault();
-            navigate(`${base}/manage/edit/${info.event.id}`);
-          }}
-        />
+        <div className="cal-toolbar">
+          {calView === "week" ? (
+            <div className="cal-nav">
+              <button className="btn btn-check" disabled={!weekGrid}
+                      onClick={() => weekGrid && setWeekAnchor(weekGrid.prev_week)}>‹</button>
+              <button className="btn btn-check" onClick={() => setWeekAnchor(todayStr())}>이번 주</button>
+              <button className="btn btn-check" disabled={!weekGrid}
+                      onClick={() => weekGrid && setWeekAnchor(weekGrid.next_week)}>›</button>
+              {weekGrid && <strong className="cal-title">{weekRangeLabel(weekGrid)}</strong>}
+            </div>
+          ) : (
+            <div />
+          )}
+          <div className="cal-toggle">
+            <button className={calView === "week" ? "active" : ""} onClick={() => setCalView("week")}>
+              주간 (시설별)
+            </button>
+            <button className={calView === "month" ? "active" : ""} onClick={() => setCalView("month")}>
+              월간
+            </button>
+          </div>
+        </div>
+
+        {calView === "week" ? (
+          weekGrid ? (
+            weekGrid.facilities.length === 0 ? (
+              <div className="empty-state">등록된 시설이 없습니다.</div>
+            ) : (
+              <WeekGridView grid={weekGrid} onPick={(id) => navigate(`${base}/manage/edit/${id}`)} />
+            )
+          ) : (
+            <div className="spinner" />
+          )
+        ) : (
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin]}
+            initialView="dayGridMonth"
+            initialDate={weekAnchor || data.selected_date}
+            locale="ko"
+            headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+            buttonText={{ today: "오늘" }}
+            dayMaxEvents={3}
+            height="auto"
+            events={events.map((e) => ({ ...e, id: String(e.id) }))}
+            eventClick={(info) => {
+              info.jsEvent.preventDefault();
+              navigate(`${base}/manage/edit/${info.event.id}`);
+            }}
+          />
+        )}
       </div>
     </>
   );
