@@ -62,6 +62,26 @@ export interface DashboardData {
   todays_groups: { facility_name: string; reservations: Reservation[] }[];
 }
 
+export type DaySegment =
+  | { type: "free"; from_hour: number; to_hour: number }
+  | {
+      type: "res";
+      from_hour: number;
+      to_hour: number;
+      res_id: number;
+      status: ReservationStatus;
+      name: string;
+      contact: string;
+    };
+
+export interface DayGrid {
+  date: string;
+  open_hour: number;
+  close_hour: number;
+  hours: number[];
+  facilities: { id: number; name: string; type: string; segments: DaySegment[] }[];
+}
+
 export interface CalendarEvent {
   id: number;
   title: string;

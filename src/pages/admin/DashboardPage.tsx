@@ -4,7 +4,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { useOrg } from "../../hooks/useOrg";
-import type { CalendarEvent, DashboardData } from "../../api/types";
+import type { CalendarEvent, DashboardData, DayGrid } from "../../api/types";
 import { formatTime } from "../../lib/datetime";
 
 export default function DashboardPage() {
@@ -12,13 +12,14 @@ export default function DashboardPage() {
   const [params, setParams] = useSearchParams();
   const date = params.get("date") || "";
   const [data, setData] = useState<DashboardData | null>(null);
+  const [grid, setGrid] = useState<DayGrid | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api
-      .get<DashboardData>(`/admin/dashboard${date ? `?date=${date}` : ""}`)
-      .then(setData);
+    const q = date ? `?date=${date}` : "";
+    api.get<DashboardData>(`/admin/dashboard${q}`).then(setData);
+    api.get<DayGrid>(`/admin/day-grid${q}`).then(setGrid);
   }, [date]);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function DashboardPage() {
 
         <div className="box">
           <h3>
-            일자별 예약 현황
+            일자별 시설 현황표
             <span className="date-nav">
               <Link className="btn btn-check" to={`${base}/manage?date=${data.prev_date}`}>
                 ‹
@@ -79,48 +80,14 @@ export default function DashboardPage() {
             </span>
           </h3>
 
-          {data.todays_groups.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>해당 날짜의 예약이 없습니다.</p>
-          ) : (
-            <table className="today-table">
-              <thead>
-                <tr>
-                  <th>시간</th>
-                  <th>시설 / 신청인</th>
-                  <th>상태</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.todays_groups.flatMap((g) =>
-                  g.reservations.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        {formatTime(r.start_time)}~{formatTime(r.end_time)}
-                      </td>
-                      <td>
-                        <strong>{g.facility_name}</strong>
-                        <br />
-                        <span style={{ color: "var(--text-sub)", fontSize: "0.82rem" }}>
-                          {r.applicant_name} ({r.applicant_contact})
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ${r.status === "confirmed" ? "badge-success" : "badge-warning"}`}>
-                          {r.status === "confirmed" ? "확정" : "대기"}
-                        </span>
-                      </td>
-                      <td>
-                        <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
-                          관리
-                        </Link>
-                      </td>
-                    </tr>
-                  )),
-                )}
-              </tbody>
-            </table>
-          )}
+          {grid && <DayGridMatrix grid={grid} onPick={(id) => navigate(`${base}/manage/edit/${id}`)} />}
+
+          <div className="dg-legend">
+            <span><i className="dg-swatch confirmed" /> 확정</span>
+            <span><i className="dg-swatch pending" /> 대기</span>
+            <span><i className="dg-swatch free" /> 비어 있음</span>
+            <span style={{ color: "var(--text-sub)" }}>· 예약 칸을 클릭하면 상세로 이동</span>
+          </div>
         </div>
       </div>
 
@@ -131,10 +98,13 @@ export default function DashboardPage() {
           initialDate={data.selected_date}
           locale="ko"
           headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek" }}
+          buttonText={{ today: "오늘", month: "월간", week: "주간" }}
           allDaySlot={false}
           slotMinTime="09:00:00"
           slotMaxTime="18:00:00"
           slotDuration="01:00:00"
+          expandRows
+          dayMaxEvents={3}
           nowIndicator
           height="auto"
           events={events.map((e) => ({ ...e, id: String(e.id) }))}
@@ -145,5 +115,51 @@ export default function DashboardPage() {
         />
       </div>
     </>
+  );
+}
+
+function DayGridMatrix({ grid, onPick }: { grid: DayGrid; onPick: (resId: number) => void }) {
+  return (
+    <div className="day-grid-scroll">
+      <table className="day-grid">
+        <thead>
+          <tr>
+            <th className="dg-fac">시설</th>
+            {grid.hours.map((h) => (
+              <th key={h}>{String(h).padStart(2, "0")}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {grid.facilities.map((f) => (
+            <tr key={f.id}>
+              <td className="dg-fac">{f.name}</td>
+              {f.segments.map((s, i) => {
+                const span = s.to_hour - s.from_hour;
+                if (s.type === "free") {
+                  return <td key={i} className="dg-cell free" colSpan={span} />;
+                }
+                return (
+                  <td
+                    key={i}
+                    className={`dg-cell res ${s.status}`}
+                    colSpan={span}
+                    title={`${s.name} (${s.contact}) · ${s.from_hour}:00~${s.to_hour}:00 · ${
+                      s.status === "confirmed" ? "확정" : "대기"
+                    }`}
+                    onClick={() => onPick(s.res_id)}
+                  >
+                    <span className="dg-name">{s.name}</span>
+                    <span className="dg-time">
+                      {s.from_hour}~{s.to_hour}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

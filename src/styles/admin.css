@@ -191,6 +191,170 @@
     color: white;
 }
 
+/* 일자별 시설 현황 매트릭스 (가로=시간, 세로=시설) */
+.day-grid-scroll {
+    overflow-x: auto;
+}
+
+.day-grid {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: separate;
+    border-spacing: 3px;
+    table-layout: fixed;
+}
+
+.day-grid thead th {
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    font-weight: 600;
+    padding: 2px 0 6px;
+    text-align: center;
+}
+
+.day-grid th.dg-fac {
+    text-align: left;
+}
+
+.day-grid .dg-fac {
+    width: 96px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+    padding-right: 8px;
+}
+
+.dg-cell {
+    height: 42px;
+    border-radius: 6px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.72rem;
+    line-height: 1.15;
+    overflow: hidden;
+}
+
+.dg-cell.free {
+    background: #f1f5f9;
+}
+
+.dg-cell.res {
+    cursor: pointer;
+    color: #fff;
+    transition: filter 0.15s;
+}
+
+.dg-cell.res:hover {
+    filter: brightness(1.07);
+}
+
+.dg-cell.res.confirmed {
+    background: #22c55e;
+}
+
+.dg-cell.res.pending {
+    background: #f59e0b;
+}
+
+.dg-cell .dg-name {
+    display: block;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+}
+
+.dg-cell .dg-time {
+    display: block;
+    font-size: 0.64rem;
+    opacity: 0.9;
+}
+
+.dg-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    margin-top: 16px;
+    font-size: 0.78rem;
+    color: var(--text-main);
+}
+
+.dg-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dg-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.dg-swatch.confirmed { background: #22c55e; }
+.dg-swatch.pending { background: #f59e0b; }
+.dg-swatch.free { background: #f1f5f9; border: 1px solid var(--border-color); }
+
+/* FullCalendar(주간/월간) — 앱 디자인에 맞춘 변수/스타일 오버라이드 */
+.calendar-box {
+    --fc-border-color: var(--border-color);
+    --fc-button-bg-color: var(--primary-color);
+    --fc-button-border-color: var(--primary-color);
+    --fc-button-hover-bg-color: #003d99;
+    --fc-button-hover-border-color: #003d99;
+    --fc-button-active-bg-color: #003d99;
+    --fc-button-active-border-color: #003d99;
+    --fc-today-bg-color: rgba(0, 82, 204, 0.06);
+    --fc-event-bg-color: var(--primary-color);
+    --fc-event-border-color: var(--primary-color);
+    --fc-now-indicator-color: var(--danger);
+}
+
+.calendar-box .fc .fc-toolbar-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.calendar-box .fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.calendar-box .fc .fc-button {
+    text-transform: none;
+    font-weight: 600;
+    border-radius: 8px;
+    box-shadow: none;
+    padding: 6px 12px;
+}
+
+.calendar-box .fc .fc-button-primary:focus,
+.calendar-box .fc .fc-button-primary:not(:disabled):active:focus {
+    box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.2);
+}
+
+.calendar-box .fc .fc-col-header-cell-cushion,
+.calendar-box .fc .fc-timegrid-axis-cushion,
+.calendar-box .fc .fc-timegrid-slot-label-cushion {
+    color: var(--text-sub);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+
+.calendar-box .fc-event {
+    border-radius: 6px;
+    font-size: 0.76rem;
+    padding: 1px 4px;
+    cursor: pointer;
+}
+
 @media (max-width: 1024px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
