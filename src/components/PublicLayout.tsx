@@ -6,11 +6,10 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { summarizeOperatingHours } from "../lib/operatingHours";
 import type { PlaceInfo } from "../api/types";
 
-const DEFAULT_LOGO = "/static/img/logo_nareum.png";
-
 export default function PublicLayout() {
   const { slug, base, api } = useOrg();
   const [info, setInfo] = useState<PlaceInfo | null>(null);
+  const [imgError, setImgError] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useDocumentTitle(
@@ -19,11 +18,14 @@ export default function PublicLayout() {
 
   useEffect(() => {
     setNotFound(false);
+    setImgError(false);
     api
       .get<PlaceInfo>("/info")
       .then(setInfo)
       .catch(() => setNotFound(true));
   }, [slug]);
+
+  const showImage = !!info?.header_image && !imgError;
 
   if (notFound) {
     return (
@@ -40,13 +42,17 @@ export default function PublicLayout() {
     <>
       <header className="header-top">
         <div className="container header-container">
-          <Link to={base}>
-            <img
-              className="logo-img"
-              src={assetUrl(info?.header_image || DEFAULT_LOGO)}
-              alt={info?.short_name || "센터"}
-              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = assetUrl(DEFAULT_LOGO); }}
-            />
+          <Link to={base} className="brand-link">
+            {showImage ? (
+              <img
+                className="logo-img"
+                src={assetUrl(info!.header_image!)}
+                alt={info?.short_name || "센터"}
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <span className="logo-text">{info?.full_name || info?.short_name || ""}</span>
+            )}
           </Link>
           <div className="header-actions">
             <Link className="btn btn-check" to={`${base}/check`}>

@@ -73,6 +73,27 @@ body {
     opacity: 0.8;
 }
 
+/* 헤더 이미지가 없을 때 기관명 텍스트 로고 */
+.logo-text {
+    display: inline-block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    line-height: 48px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.2s;
+}
+
+.brand-link:hover .logo-text {
+    opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+    .logo-text { font-size: 1.1rem; }
+}
+
 .header-actions {
     display: flex;
     align-items: center;
