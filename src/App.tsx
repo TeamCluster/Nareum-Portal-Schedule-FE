@@ -18,6 +18,7 @@ import ListPage from "./pages/admin/ListPage";
 import AddPage from "./pages/admin/AddPage";
 import EditPage from "./pages/admin/EditPage";
 import FacilitiesPage from "./pages/admin/FacilitiesPage";
+import SettingsPage from "./pages/admin/SettingsPage";
 
 import SuperLoginPage from "./pages/super/LoginPage";
 import SuperPlacesPage from "./pages/super/PlacesPage";
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="list" element={<ListPage />} />
         <Route path="add" element={<AddPage />} />
         <Route path="facilities" element={<FacilitiesPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="edit/:resId" element={<EditPage />} />
       </Route>
 

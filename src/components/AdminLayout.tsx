@@ -15,6 +15,7 @@ export default function AdminLayout() {
     { to: base + "/manage/list", label: "전체 예약 목록", end: false },
     { to: base + "/manage/add", label: "예약 직접 추가", end: false },
     { to: base + "/manage/facilities", label: "시설 관리", end: false },
+    { to: base + "/manage/settings", label: "기관 정보", end: false },
   ];
 
   useEffect(() => {
