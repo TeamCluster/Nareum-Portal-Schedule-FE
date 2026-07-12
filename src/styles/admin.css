@@ -26,6 +26,8 @@
     display: flex;
     flex-direction: column;
     z-index: 1000;
+    transition: width 0.2s ease;
+    overflow: hidden;
 }
 
 .admin-sidebar .brand {
@@ -34,6 +36,12 @@
     font-weight: 800;
     border-bottom: 1px solid #334155;
     background-color: #0f172a;
+    white-space: nowrap;
+}
+
+.admin-sidebar .brand-mark {
+    display: none;
+    text-align: center;
 }
 
 .admin-nav {
@@ -44,11 +52,14 @@
 .admin-nav a {
     display: flex;
     align-items: center;
+    gap: 14px;
     padding: 12px 24px;
     color: #94a3b8;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: background-color 0.15s, color 0.15s;
     font-weight: 500;
+    white-space: nowrap;
+    position: relative;
 }
 
 .admin-nav a:hover {
@@ -61,12 +72,99 @@
     background-color: var(--primary-color);
 }
 
+.nav-ico {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+.nav-label {
+    flex: 1;
+}
+
+.nav-badge {
+    margin-left: auto;
+}
+
+/* --- 접힌(아이콘 레일) 상태 --- */
+.admin-layout.collapsed {
+    --sidebar-width: 74px;
+}
+
+.admin-layout.collapsed .brand-text {
+    display: none;
+}
+
+.admin-layout.collapsed .brand {
+    padding: 24px 0;
+}
+
+.admin-layout.collapsed .brand-mark {
+    display: block;
+}
+
+.admin-layout.collapsed .admin-nav a {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+}
+
+.admin-layout.collapsed .nav-label {
+    display: none;
+}
+
+.admin-layout.collapsed .nav-badge {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    margin-left: 0;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+}
+
 /* 메인 콘텐츠 영역 */
 .admin-main {
     margin-left: var(--sidebar-width);
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    transition: margin-left 0.2s ease;
+}
+
+/* 헤더 좌측(햄버거 + 타이틀) */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.header-left strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    color: var(--text-main);
+    cursor: pointer;
+    flex: none;
+    transition: background-color 0.15s;
+    margin-top: 0;
+    padding: 0;
+}
+
+.hamburger:hover {
+    background: #f1f5f9;
 }
 
 .admin-header {
@@ -88,9 +186,16 @@
 /* 대시보드 위젯 박스 */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    /* minmax(0, 1fr): 오른쪽 트랙이 내부 매트릭스보다 좁아도 줄어들 수 있게 →
+       콘텐츠가 잘리지 않고 .day-grid-scroll 안에서 가로 스크롤됨 */
+    grid-template-columns: 350px minmax(0, 1fr);
     gap: 24px;
     margin-bottom: 24px;
+}
+
+/* 그리드 자식이 콘텐츠 최소폭 때문에 넘치지 않도록 */
+.dashboard-grid > .box {
+    min-width: 0;
 }
 
 .box {
@@ -360,16 +465,33 @@
         grid-template-columns: 1fr;
     }
 
-    .admin-sidebar {
-        width: 70px;
+    /* 좁은 화면에서는 접힘 상태와 무관하게 자동 아이콘 레일 */
+    .admin-layout {
+        --sidebar-width: 74px;
     }
-
-    .admin-sidebar .brand,
-    .admin-nav a span {
+    .admin-layout .brand-text {
         display: none;
     }
-
-    .admin-main {
-        margin-left: 70px;
+    .admin-layout .brand {
+        padding: 24px 0;
+    }
+    .admin-layout .brand-mark {
+        display: block;
+    }
+    .admin-layout .admin-nav a {
+        justify-content: center;
+        padding: 14px 0;
+        gap: 0;
+    }
+    .admin-layout .nav-label {
+        display: none;
+    }
+    .admin-layout .nav-badge {
+        position: absolute;
+        top: 8px;
+        right: 16px;
+        margin-left: 0;
+        padding: 1px 5px;
+        font-size: 0.65rem;
     }
 }
