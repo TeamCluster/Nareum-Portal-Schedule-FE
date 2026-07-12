@@ -35,6 +35,7 @@ export default function OperatingPage() {
   const [closureForm, setClosureForm] = useState<{ date: string; name: string; type: HolidayType }>({
     date: "", name: "", type: "closure",
   });
+  const [holYear, setHolYear] = useState<string>(""); // "" → 최초 로드 시 최근 연도로
   const [holErr, setHolErr] = useState("");
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -97,6 +98,19 @@ export default function OperatingPage() {
 
   const commonByYear = useMemo(() => groupByYear(hol?.common || []), [hol]);
   const placeByYear = useMemo(() => groupByYear(hol?.place || []), [hol]);
+  const holYears = useMemo(() => {
+    const s = new Set<string>();
+    hol?.common.forEach((h) => s.add(h.date.slice(0, 4)));
+    hol?.place.forEach((p) => s.add(p.date.slice(0, 4)));
+    return [...s].sort();
+  }, [hol]);
+  // 기본 선택값 = 가장 최근 연도 (최초 1회)
+  useEffect(() => {
+    if (holYear === "" && holYears.length) setHolYear(holYears[holYears.length - 1]);
+  }, [holYears, holYear]);
+  const yearSel = holYear || "all";
+  const shownCommon = yearSel === "all" ? commonByYear : commonByYear.filter(([y]) => y === yearSel);
+  const shownPlace = yearSel === "all" ? placeByYear : placeByYear.filter(([y]) => y === yearSel);
 
   async function addBlock() {
     setBlkErr("");
@@ -204,11 +218,21 @@ export default function OperatingPage() {
             기관 휴무일 추가
           </button>
 
-          <h5 style={{ margin: "16px 0 8px" }}>공통 휴무일 (슈퍼 관리자 지정) · 연도별</h5>
-          {commonByYear.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>등록된 공통 휴무일이 없습니다.</p>
+          <div className="cal-toolbar" style={{ marginTop: 16, marginBottom: 4 }}>
+            <strong>등록 현황 (연도별)</strong>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <select value={yearSel} onChange={(e) => setHolYear(e.target.value)}>
+                <option value="all">전체 연도</option>
+                {holYears.map((y) => <option key={y} value={y}>{y}년</option>)}
+              </select>
+            </div>
+          </div>
+
+          <h5 style={{ margin: "12px 0 8px" }}>공통 휴무일 (슈퍼 관리자 지정)</h5>
+          {shownCommon.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>해당 연도의 공통 휴무일이 없습니다.</p>
           ) : (
-            commonByYear.map(([y, list]) => (
+            shownCommon.map(([y, list]) => (
               <Collapsible key={y} title={`${y}년`} count={list.length}>
                 <table className="admin-table">
                   <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>이 기관 적용</th></tr></thead>
@@ -237,11 +261,11 @@ export default function OperatingPage() {
             ))
           )}
 
-          <h5 style={{ margin: "18px 0 8px" }}>기관 지정 휴무일 · 연도별</h5>
-          {placeByYear.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>등록된 기관 지정 휴무일이 없습니다.</p>
+          <h5 style={{ margin: "18px 0 8px" }}>기관 지정 휴무일</h5>
+          {shownPlace.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>해당 연도의 기관 지정 휴무일이 없습니다.</p>
           ) : (
-            placeByYear.map(([y, list]) => (
+            shownPlace.map(([y, list]) => (
               <Collapsible key={y} title={`${y}년`} count={list.length}>
                 <table className="admin-table">
                   <thead><tr><th>날짜</th><th>유형</th><th>사유</th><th>관리</th></tr></thead>
