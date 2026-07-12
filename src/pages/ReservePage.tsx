@@ -142,6 +142,11 @@ export default function ReservePage() {
               </span>
             )}
           </h4>
+          {dayCfg?.note && dayCfg.is_open && (
+            <ul className="flash-messages">
+              <li style={{ background: "#eff6ff", color: "#1e40af", borderColor: "#bfdbfe" }}>{dayCfg.note}</li>
+            </ul>
+          )}
           {dayCfg && !dayCfg.is_open ? (
             <ul className="flash-messages">
               <li>해당 날짜는 휴무일입니다{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}.</li>

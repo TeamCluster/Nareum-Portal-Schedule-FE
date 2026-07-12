@@ -65,6 +65,12 @@ export default function HomePage() {
         </ul>
       )}
 
+      {selectedDate && data && data.is_reservable && data.note && (
+        <ul className="flash-messages">
+          <li style={{ background: "#eff6ff", color: "#1e40af", borderColor: "#bfdbfe" }}>{data.note}</li>
+        </ul>
+      )}
+
       {loading ? (
         <div className="spinner" />
       ) : (

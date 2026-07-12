@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
-import type { Closure, Facility, OperatingHour, RecurringBlock } from "../../api/types";
+import type {
+  CommonHoliday, Facility, HolidayType, OperatingHour, OrgHolidaysView, RecurringBlock,
+} from "../../api/types";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 const HOUR_OPTIONS = Array.from({ length: 24 - 6 + 1 }, (_, i) => 6 + i); // 6..24
+const TYPE_LABEL: Record<HolidayType, string> = { closure: "휴무일", holiday: "공휴일" };
 
 function hh(h: number) {
   return `${String(h).padStart(2, "0")}:00`;
+}
+function yearOf(date: string) {
+  return date.slice(0, 4);
 }
 
 export default function OperatingPage() {
@@ -17,22 +23,27 @@ export default function OperatingPage() {
   const [hoursMsg, setHoursMsg] = useState("");
   const [hoursErr, setHoursErr] = useState("");
 
-  const [closures, setClosures] = useState<Closure[]>([]);
-  const [closureDate, setClosureDate] = useState("");
-  const [closureReason, setClosureReason] = useState("");
+  const [hol, setHol] = useState<OrgHolidaysView | null>(null);
+  const [closureForm, setClosureForm] = useState<{ date: string; name: string; type: HolidayType }>({
+    date: "", name: "", type: "closure",
+  });
+  const [holYear, setHolYear] = useState<string>("all");
+  const [holErr, setHolErr] = useState("");
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [blocks, setBlocks] = useState<RecurringBlock[]>([]);
   const [blk, setBlk] = useState({ facility_id: "", weekday: "0", start_hour: "10", end_hour: "12", title: "" });
   const [blkErr, setBlkErr] = useState("");
 
-  function loadAll() {
+  function loadHolidays() {
+    api.get<OrgHolidaysView>("/admin/holidays").then(setHol);
+  }
+  useEffect(() => {
     api.get<{ operating_hours: OperatingHour[] }>("/admin/operating-hours").then((d) => setHours(d.operating_hours));
-    api.get<{ closures: Closure[] }>("/admin/closures").then((d) => setClosures(d.closures));
     api.get<{ blocks: RecurringBlock[] }>("/admin/recurring-blocks").then((d) => setBlocks(d.blocks));
     api.get<Facility[]>("/admin/facilities").then(setFacilities);
-  }
-  useEffect(loadAll, []);
+    loadHolidays();
+  }, []);
 
   function setDay(wd: number, patch: Partial<OperatingHour>) {
     setHours((prev) => prev.map((d) => (d.weekday === wd ? { ...d, ...patch } : d)));
@@ -49,22 +60,44 @@ export default function OperatingPage() {
     }
   }
 
+  async function toggleOperates(v: boolean) {
+    await api.put("/admin/holiday-setting", { holiday_operates: v });
+    loadHolidays();
+  }
+
   async function addClosure() {
-    if (!closureDate) return;
+    setHolErr("");
+    if (!closureForm.date) return setHolErr("날짜를 선택해주세요.");
     try {
-      await api.post("/admin/closures", { date: closureDate, reason: closureReason });
-      setClosureDate("");
-      setClosureReason("");
-      api.get<{ closures: Closure[] }>("/admin/closures").then((d) => setClosures(d.closures));
+      await api.post("/admin/closures", closureForm);
+      setClosureForm({ date: "", name: "", type: closureForm.type });
+      loadHolidays();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "휴무일 추가에 실패했습니다.");
+      setHolErr(err instanceof ApiError ? err.message : "추가에 실패했습니다.");
     }
   }
 
   async function delClosure(id: number) {
     await api.del(`/admin/closures/${id}`);
-    setClosures((prev) => prev.filter((c) => c.id !== id));
+    loadHolidays();
   }
+
+  async function toggleExclude(h: CommonHoliday) {
+    if (h.excluded) await api.del(`/admin/holiday-excludes/${h.date}`);
+    else await api.post("/admin/holiday-excludes", { date: h.date });
+    loadHolidays();
+  }
+
+  // 연도 목록 + 필터
+  const years = useMemo(() => {
+    const s = new Set<string>();
+    hol?.common.forEach((h) => s.add(yearOf(h.date)));
+    hol?.place.forEach((p) => s.add(yearOf(p.date)));
+    return [...s].sort();
+  }, [hol]);
+  const inYear = (date: string) => holYear === "all" || yearOf(date) === holYear;
+  const common = (hol?.common || []).filter((h) => inYear(h.date));
+  const place = (hol?.place || []).filter((p) => inYear(p.date));
 
   async function addBlock() {
     setBlkErr("");
@@ -83,7 +116,6 @@ export default function OperatingPage() {
       setBlkErr(err instanceof ApiError ? err.message : "정기활동 추가에 실패했습니다.");
     }
   }
-
   async function delBlock(id: number) {
     await api.del(`/admin/recurring-blocks/${id}`);
     setBlocks((prev) => prev.filter((b) => b.id !== id));
@@ -104,9 +136,7 @@ export default function OperatingPage() {
             </ul>
           )}
           <table className="admin-table" style={{ marginBottom: 16 }}>
-            <thead>
-              <tr><th>요일</th><th>운영</th><th>시작</th><th>종료</th></tr>
-            </thead>
+            <thead><tr><th>요일</th><th>운영</th><th>시작</th><th>종료</th></tr></thead>
             <tbody>
               {hours.map((d) => (
                 <tr key={d.weekday}>
@@ -138,31 +168,97 @@ export default function OperatingPage() {
         </div>
       </div>
 
-      {/* 휴무일 */}
+      {/* 휴무일 / 공휴일 */}
       <div className="form-card">
         <div className="form-section" style={{ marginBottom: 0 }}>
-          <h4>휴무일 (행사·공휴일 등 특정 날짜 차단)</h4>
+          <h4>휴무일 / 공휴일</h4>
+
+          <label className="agree-box" style={{ marginBottom: 16 }}>
+            <input type="checkbox" checked={!!hol?.holiday_operates}
+                   onChange={(e) => toggleOperates(e.target.checked)} />
+            공휴일에도 운영합니다 (공휴일은 <strong>주말(일요일) 운영시간</strong>으로 적용). 끄면 공휴일은 휴무.
+          </label>
+
+          {holErr && <ul className="flash-messages"><li>{holErr}</li></ul>}
+
           <div className="field-row" style={{ alignItems: "end" }}>
             <div className="field">
               <label>날짜</label>
-              <input type="date" value={closureDate} onChange={(e) => setClosureDate(e.target.value)} />
+              <input type="date" value={closureForm.date}
+                     onChange={(e) => setClosureForm({ ...closureForm, date: e.target.value })} />
             </div>
             <div className="field">
-              <label>사유(선택)</label>
-              <input value={closureReason} placeholder="예: 개관기념일"
-                     onChange={(e) => setClosureReason(e.target.value)} />
+              <label>유형</label>
+              <select value={closureForm.type}
+                      onChange={(e) => setClosureForm({ ...closureForm, type: e.target.value as HolidayType })}>
+                <option value="closure">휴무일 (완전 휴무)</option>
+                <option value="holiday">공휴일 (운영 설정 시 주말 시간)</option>
+              </select>
             </div>
           </div>
-          <button className="btn btn-primary" onClick={addClosure} style={{ marginBottom: 16 }}>휴무일 추가</button>
-          {closures.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>등록된 휴무일이 없습니다.</p>
+          <div className="field">
+            <label>사유/이름 (선택)</label>
+            <input value={closureForm.name} placeholder="예: 개관기념일"
+                   onChange={(e) => setClosureForm({ ...closureForm, name: e.target.value })} />
+          </div>
+          <button className="btn btn-primary" onClick={addClosure} style={{ marginBottom: 18 }}>
+            기관 휴무일 추가
+          </button>
+
+          <div className="cal-toolbar" style={{ marginBottom: 10 }}>
+            <strong>등록 현황</strong>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <select value={holYear} onChange={(e) => setHolYear(e.target.value)}>
+                <option value="all">전체 연도</option>
+                {years.map((y) => <option key={y} value={y}>{y}년</option>)}
+              </select>
+            </div>
+          </div>
+
+          <h5 style={{ margin: "6px 0" }}>공통 휴무일 (슈퍼 관리자 지정)</h5>
+          {common.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>해당 연도의 공통 휴무일이 없습니다.</p>
+          ) : (
+            <table className="admin-table" style={{ marginBottom: 18 }}>
+              <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>이 기관 적용</th></tr></thead>
+              <tbody>
+                {common.map((h) => (
+                  <tr key={h.id} className={h.excluded ? "deleted" : ""}>
+                    <td>{h.date}</td>
+                    <td>
+                      <span className={`status-pill ${h.type === "closure" ? "rejected" : "pending"}`}>
+                        {TYPE_LABEL[h.type]}
+                      </span>
+                    </td>
+                    <td>{h.name || "-"}</td>
+                    <td>
+                      {h.excluded ? (
+                        <button className="btn btn-check" onClick={() => toggleExclude(h)}>제외됨 · 다시 적용</button>
+                      ) : (
+                        <button className="btn btn-danger" onClick={() => toggleExclude(h)}>이 기관에서 제외</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <h5 style={{ margin: "6px 0" }}>기관 지정 휴무일</h5>
+          {place.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>해당 연도의 기관 지정 휴무일이 없습니다.</p>
           ) : (
             <table className="admin-table">
-              <thead><tr><th>날짜</th><th>사유</th><th>관리</th></tr></thead>
+              <thead><tr><th>날짜</th><th>유형</th><th>사유</th><th>관리</th></tr></thead>
               <tbody>
-                {closures.map((c) => (
+                {place.map((c) => (
                   <tr key={c.id}>
                     <td>{c.date}</td>
+                    <td>
+                      <span className={`status-pill ${c.type === "closure" ? "rejected" : "pending"}`}>
+                        {TYPE_LABEL[c.type]}
+                      </span>
+                    </td>
                     <td>{c.reason || "-"}</td>
                     <td><button className="btn btn-danger" onClick={() => delClosure(c.id)}>삭제</button></td>
                   </tr>

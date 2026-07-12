@@ -1,6 +1,6 @@
 // 슈퍼 관리자 API (/api/super/...).
 import { api } from "./client";
-import type { Place } from "./types";
+import type { CommonHoliday, HolidayType, Place } from "./types";
 
 export interface PlaceInput {
   slug: string;
@@ -28,4 +28,10 @@ export const superApi = {
     api.del<{ ok: boolean; message: string }>(`/super/places/${slug}`),
   changePlacePassword: (slug: string, new_password: string) =>
     api.post<{ ok: boolean; message: string }>(`/super/places/${slug}/password`, { new_password }),
+
+  // 공통 휴무일/공휴일
+  listHolidays: () => api.get<{ holidays: CommonHoliday[] }>("/super/holidays"),
+  addHoliday: (body: { date: string; name: string; type: HolidayType }) =>
+    api.post<{ ok: boolean }>("/super/holidays", body),
+  deleteHoliday: (id: number) => api.del<{ ok: boolean }>(`/super/holidays/${id}`),
 };

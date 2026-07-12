@@ -23,6 +23,7 @@ import SettingsPage from "./pages/admin/SettingsPage";
 
 import SuperLoginPage from "./pages/super/LoginPage";
 import SuperPlacesPage from "./pages/super/PlacesPage";
+import SuperHolidaysPage from "./pages/super/HolidaysPage";
 
 /*
  * 라우터 — 멀티테넌트.
@@ -59,6 +60,7 @@ export default function App() {
         }
       >
         <Route index element={<SuperPlacesPage />} />
+        <Route path="holidays" element={<SuperHolidaysPage />} />
       </Route>
 
       {/* 기관 관리자 로그인 (레이아웃 밖) */}

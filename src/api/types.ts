@@ -23,6 +23,7 @@ export interface Availability {
   is_reservable: boolean;
   is_open: boolean;
   closed_reason: string;
+  note?: string;
   open_hour: number;
   close_hour: number;
   facilities: AvailabilityFacility[];
@@ -34,6 +35,32 @@ export interface DayConfig {
   open_hour: number;
   close_hour: number;
   closed_reason: string;
+  note?: string;
+}
+
+export type HolidayType = "closure" | "holiday";
+
+/** 슈퍼 공통 휴무일/공휴일 (기관 view 에서는 excluded 포함). */
+export interface CommonHoliday {
+  id: number;
+  date: string;
+  name: string;
+  type: HolidayType;
+  excluded?: boolean;
+}
+
+/** 기관 지정 휴무일/공휴일. */
+export interface OrgClosure {
+  id: number;
+  date: string;
+  reason: string;
+  type: HolidayType;
+}
+
+export interface OrgHolidaysView {
+  holiday_operates: boolean;
+  common: CommonHoliday[];
+  place: OrgClosure[];
 }
 
 export interface OperatingHour {

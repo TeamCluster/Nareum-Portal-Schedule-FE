@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { superApi } from "../api/super";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -31,9 +31,12 @@ export default function SuperLayout() {
       <aside className="admin-sidebar">
         <div className="brand">슈퍼 관리자</div>
         <nav className="admin-nav">
-          <a className="active" style={{ pointerEvents: "none" }}>
-            <span>기관 관리</span>
-          </a>
+          <NavLink to="/super" end>
+            <span className="nav-label">기관 관리</span>
+          </NavLink>
+          <NavLink to="/super/holidays">
+            <span className="nav-label">공통 휴무일</span>
+          </NavLink>
         </nav>
       </aside>
 
