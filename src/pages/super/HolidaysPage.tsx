@@ -17,12 +17,31 @@ export default function SuperHolidaysPage() {
   });
   const [error, setError] = useState("");
   const [year, setYear] = useState<string>("all");
+  const [syncYear, setSyncYear] = useState<string>(String(new Date().getFullYear()));
+  const [syncMsg, setSyncMsg] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   function load() {
     setLoading(true);
     superApi.listHolidays().then((d) => setItems(d.holidays)).finally(() => setLoading(false));
   }
   useEffect(load, []);
+
+  async function sync() {
+    setSyncMsg("");
+    setError("");
+    setSyncing(true);
+    try {
+      const r = await superApi.syncHolidays(Number(syncYear));
+      setSyncMsg(`${r.year}년 한국 공휴일 ${r.count}건을 반영했습니다 (대체공휴일 포함).`);
+      setYear(String(r.year));
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "동기화에 실패했습니다.");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const years = useMemo(
     () => Array.from(new Set(items.map((h) => yearOf(h.date)))).sort(),
@@ -68,6 +87,29 @@ export default function SuperHolidaysPage() {
 
       {error && <ul className="flash-messages"><li>{error}</li></ul>}
 
+      <div className="form-card">
+        <div className="form-section" style={{ marginBottom: 0 }}>
+          <h4>한국 공휴일 자동 채우기</h4>
+          <p style={{ color: "var(--text-sub)", fontSize: "0.86rem", marginTop: 0 }}>
+            선택한 연도의 공휴일을 <strong>대체공휴일 포함</strong>하여 자동 등록합니다.
+            공휴일 제정/폐지·대체공휴일 변경이 있으면 다시 실행하면 반영됩니다.
+            (자동 항목만 갱신되고 수동 항목은 보존됩니다.)
+          </p>
+          {syncMsg && (
+            <ul className="flash-messages">
+              <li style={{ background: "#dcfce7", color: "#166534", borderColor: "#86efac" }}>{syncMsg}</li>
+            </ul>
+          )}
+          <div className="cal-nav">
+            <input type="number" min={2000} max={2100} value={syncYear} style={{ width: 120 }}
+                   onChange={(e) => setSyncYear(e.target.value)} />
+            <button className="btn btn-primary" onClick={sync} disabled={syncing}>
+              {syncing ? "동기화 중..." : `${syncYear}년 공휴일 채우기`}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <form className="form-card" onSubmit={add}>
         <div className="form-section" style={{ marginBottom: 0 }}>
           <h4>공통 휴무일 추가</h4>
@@ -112,7 +154,7 @@ export default function SuperHolidaysPage() {
           <div key={y} style={{ marginBottom: 20 }}>
             <h4 style={{ margin: "0 0 8px" }}>{y}년 <span style={{ color: "var(--text-sub)", fontWeight: 400 }}>({list.length}건)</span></h4>
             <table className="admin-table">
-              <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>관리</th></tr></thead>
+              <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>구분</th><th>관리</th></tr></thead>
               <tbody>
                 {list.map((h) => (
                   <tr key={h.id}>
@@ -123,6 +165,11 @@ export default function SuperHolidaysPage() {
                       </span>
                     </td>
                     <td>{h.name || "-"}</td>
+                    <td>
+                      <span className={`status-pill ${h.source === "auto" ? "confirmed" : "cancelled"}`}>
+                        {h.source === "auto" ? "자동" : "수동"}
+                      </span>
+                    </td>
                     <td><button className="btn btn-danger" onClick={() => remove(h)}>삭제</button></td>
                   </tr>
                 ))}

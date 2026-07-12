@@ -46,6 +46,7 @@ export interface CommonHoliday {
   date: string;
   name: string;
   type: HolidayType;
+  source?: string; // 'manual' | 'auto'(한국 공휴일 동기화)
   excluded?: boolean;
 }
 

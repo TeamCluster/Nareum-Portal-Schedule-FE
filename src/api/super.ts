@@ -34,4 +34,7 @@ export const superApi = {
   addHoliday: (body: { date: string; name: string; type: HolidayType }) =>
     api.post<{ ok: boolean }>("/super/holidays", body),
   deleteHoliday: (id: number) => api.del<{ ok: boolean }>(`/super/holidays/${id}`),
+  syncHolidays: (year: number) =>
+    api.post<{ ok: boolean; year: number; count: number; added: number }>(
+      "/super/holidays/sync", { year }),
 };
