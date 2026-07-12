@@ -71,13 +71,15 @@ export default function WeekGrid({
               <td className="wg-hour">{String(h).padStart(2, "0")}</td>
               {days.map((day, di) => {
                 if (!day.is_open) {
-                  // 휴무일: 각 시설 컬럼에 전체 높이 1칸("휴무")만 첫 시간에 렌더
+                  // 휴무일: 시설 컬럼 전체를 한 칸으로 병합(colSpan×rowSpan)해 "휴무" 1회 표기.
                   if (h !== hour_min) return null;
-                  return facilities.map((f) => (
-                    <td key={`${di}-${f.id}`} rowSpan={hours.length} className="wg-cell wg-closed">
-                      휴무
+                  return (
+                    <td key={`closed-${di}`} colSpan={nFac} rowSpan={hours.length}
+                        className="wg-cell wg-closed"
+                        title={day.closed_reason ? `휴무 (${day.closed_reason})` : "휴무"}>
+                      휴무{day.closed_reason ? ` (${day.closed_reason})` : ""}
                     </td>
-                  ));
+                  );
                 }
                 return facilities.map((f) => {
                   const col = cols[di].get(f.id);
