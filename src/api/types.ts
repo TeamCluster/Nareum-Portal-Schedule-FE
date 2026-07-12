@@ -182,6 +182,8 @@ export interface PlaceInfo {
   address: string;
   phone: string;
   email: string;
+  header_image?: string;
+  operating_hours?: OperatingHour[];
 }
 
 /** 슈퍼 관리자 기관 목록 항목. GET /api/super/places */
@@ -193,5 +195,6 @@ export interface Place {
   address: string;
   phone: string;
   email: string;
+  header_image?: string;
   created_at: string;
 }

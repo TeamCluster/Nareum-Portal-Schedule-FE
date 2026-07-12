@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiError } from "../../api/client";
+import { ApiError, assetUrl } from "../../api/client";
 import { superApi, PlaceInput } from "../../api/super";
 import type { Place } from "../../api/types";
 
@@ -46,6 +46,25 @@ export default function SuperPlacesPage() {
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "삭제에 실패했습니다.");
     }
+  }
+
+  async function uploadHeader(slug: string, file: File) {
+    setOk(""); setError("");
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const r = await superApi.uploadHeader(slug, fd);
+      setPlaces((prev) => prev.map((p) => (p.slug === slug ? { ...p, header_image: r.header_image } : p)));
+      setOk("헤더 로고가 업로드되었습니다.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "로고 업로드에 실패했습니다.");
+    }
+  }
+
+  async function deleteHeader(slug: string) {
+    if (!window.confirm("헤더 로고를 삭제하시겠습니까?")) return;
+    await superApi.deleteHeader(slug);
+    setPlaces((prev) => prev.map((p) => (p.slug === slug ? { ...p, header_image: "" } : p)));
   }
 
   async function changePw() {
@@ -125,6 +144,7 @@ export default function SuperPlacesPage() {
             <tr>
               <th>슬러그</th>
               <th>기관명</th>
+              <th>헤더 로고</th>
               <th>연락처</th>
               <th>공개 주소</th>
               <th>관리</th>
@@ -138,6 +158,23 @@ export default function SuperPlacesPage() {
                   {p.full_name}
                   <br />
                   <span style={{ color: "var(--text-sub)", fontSize: "0.82rem" }}>{p.short_name}</span>
+                </td>
+                <td>
+                  {p.header_image ? (
+                    <img src={assetUrl(p.header_image)} alt="헤더 로고" className="fac-thumb" />
+                  ) : (
+                    <span className="fac-thumb fac-thumb-empty">없음</span>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+                    <label className="btn btn-check" style={{ cursor: "pointer" }}>
+                      업로드
+                      <input type="file" accept="image/*" style={{ display: "none" }}
+                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadHeader(p.slug, f); e.currentTarget.value = ""; }} />
+                    </label>
+                    {p.header_image && (
+                      <button className="btn btn-danger" onClick={() => deleteHeader(p.slug)}>삭제</button>
+                    )}
+                  </div>
                 </td>
                 <td style={{ fontSize: "0.82rem" }}>
                   {p.phone || "-"}

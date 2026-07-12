@@ -3,7 +3,10 @@ import { Link, Outlet } from "react-router-dom";
 import { assetUrl } from "../api/client";
 import { useOrg } from "../hooks/useOrg";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { summarizeOperatingHours } from "../lib/operatingHours";
 import type { PlaceInfo } from "../api/types";
+
+const DEFAULT_LOGO = "/static/img/logo_nareum.png";
 
 export default function PublicLayout() {
   const { slug, base, api } = useOrg();
@@ -38,7 +41,12 @@ export default function PublicLayout() {
       <header className="header-top">
         <div className="container header-container">
           <Link to={base}>
-            <img className="logo-img" src={assetUrl("/static/img/logo_nareum.png")} alt={info?.short_name || "센터"} />
+            <img
+              className="logo-img"
+              src={assetUrl(info?.header_image || DEFAULT_LOGO)}
+              alt={info?.short_name || "센터"}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = assetUrl(DEFAULT_LOGO); }}
+            />
           </Link>
           <div className="header-actions">
             <Link className="btn btn-check" to={`${base}/check`}>
@@ -58,7 +66,9 @@ export default function PublicLayout() {
             <div className="footer-info">
               <h3>{info?.full_name || " "}</h3>
               {info?.address && <p>주소: {info.address}</p>}
-              <p>운영시간: 평일 09:00 ~ 18:00</p>
+              {summarizeOperatingHours(info?.operating_hours) && (
+                <p>운영시간: {summarizeOperatingHours(info?.operating_hours)}</p>
+              )}
             </div>
             <div className="footer-info footer-contact">
               {info?.phone && <p>전화: {info.phone}</p>}

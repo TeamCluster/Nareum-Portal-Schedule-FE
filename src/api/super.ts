@@ -28,6 +28,9 @@ export const superApi = {
     api.del<{ ok: boolean; message: string }>(`/super/places/${slug}`),
   changePlacePassword: (slug: string, new_password: string) =>
     api.post<{ ok: boolean; message: string }>(`/super/places/${slug}/password`, { new_password }),
+  uploadHeader: (slug: string, form: FormData) =>
+    api.upload<{ ok: boolean; header_image: string }>(`/super/places/${slug}/header`, form),
+  deleteHeader: (slug: string) => api.del<{ ok: boolean }>(`/super/places/${slug}/header`),
 
   // 공통 휴무일/공휴일
   listHolidays: () => api.get<{ holidays: CommonHoliday[] }>("/super/holidays"),

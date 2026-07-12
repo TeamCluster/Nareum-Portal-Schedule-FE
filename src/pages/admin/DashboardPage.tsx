@@ -89,7 +89,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="box">
-          <h3>
+          <h3 style={{ wordBreak: "keep-all" }}>
             일자별 시설 현황표
             <span className="date-nav">
               <Link className="btn btn-check" to={`${base}/manage?date=${data.prev_date}`}>
