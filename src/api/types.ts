@@ -21,7 +21,42 @@ export interface Availability {
   max_date: string;
   selected_date: string | null;
   is_reservable: boolean;
+  is_open: boolean;
+  closed_reason: string;
+  open_hour: number;
+  close_hour: number;
   facilities: AvailabilityFacility[];
+}
+
+export interface DayConfig {
+  weekday?: number;
+  is_open: boolean;
+  open_hour: number;
+  close_hour: number;
+  closed_reason: string;
+}
+
+export interface OperatingHour {
+  weekday: number; // 0=Mon .. 6=Sun
+  is_open: boolean;
+  open_hour: number;
+  close_hour: number;
+}
+
+export interface Closure {
+  id: number;
+  date: string;
+  reason: string;
+}
+
+export interface RecurringBlock {
+  id: number;
+  facility_id: number;
+  facility_name: string | null;
+  weekday: number;
+  start_hour: number;
+  end_hour: number;
+  title: string;
 }
 
 export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "rejected";
@@ -72,10 +107,13 @@ export type DaySegment =
       status: ReservationStatus;
       name: string;
       contact: string;
-    };
+    }
+  | { type: "block"; from_hour: number; to_hour: number; title: string };
 
 export interface DayGrid {
   date: string;
+  is_open: boolean;
+  closed_reason: string;
   open_hour: number;
   close_hour: number;
   hours: number[];

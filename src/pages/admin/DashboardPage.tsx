@@ -80,11 +80,18 @@ export default function DashboardPage() {
             </span>
           </h3>
 
-          {grid && <DayGridMatrix grid={grid} onPick={(id) => navigate(`${base}/manage/edit/${id}`)} />}
+          {grid && !grid.is_open ? (
+            <div className="empty-state" style={{ padding: "30px 10px" }}>
+              휴무일입니다{grid.closed_reason ? ` (${grid.closed_reason})` : ""}.
+            </div>
+          ) : (
+            grid && <DayGridMatrix grid={grid} onPick={(id) => navigate(`${base}/manage/edit/${id}`)} />
+          )}
 
           <div className="dg-legend">
             <span><i className="dg-swatch confirmed" /> 확정</span>
             <span><i className="dg-swatch pending" /> 대기</span>
+            <span><i className="dg-swatch block" /> 정기활동</span>
             <span><i className="dg-swatch free" /> 비어 있음</span>
             <span style={{ color: "var(--text-sub)" }}>· 예약 칸을 클릭하면 상세로 이동</span>
           </div>
@@ -138,6 +145,15 @@ function DayGridMatrix({ grid, onPick }: { grid: DayGrid; onPick: (resId: number
                 const span = s.to_hour - s.from_hour;
                 if (s.type === "free") {
                   return <td key={i} className="dg-cell free" colSpan={span} />;
+                }
+                if (s.type === "block") {
+                  return (
+                    <td key={i} className="dg-cell block" colSpan={span}
+                        title={`${s.title} · ${s.from_hour}:00~${s.to_hour}:00 · 정기활동`}>
+                      <span className="dg-name">{s.title}</span>
+                      <span className="dg-time">정기</span>
+                    </td>
+                  );
                 }
                 return (
                   <td

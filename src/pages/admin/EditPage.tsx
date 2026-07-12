@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
-import type { Facility, Reservation, ReservationStatus } from "../../api/types";
+import type { DayConfig, Facility, Reservation, ReservationStatus } from "../../api/types";
 import { dateOf, hourOf } from "../../lib/datetime";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
 import ReservationFields, { ApplicantState } from "../../components/ReservationFields";
@@ -25,6 +25,7 @@ export default function EditPage() {
   const [date, setDate] = useState("");
   const [bookedHours, setBookedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
+  const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
   const [fields, setFields] = useState<ApplicantState>({
     name: "",
     contact: "",
@@ -69,6 +70,7 @@ export default function EditPage() {
         `/admin/booked-times?facility_id=${facilityId}&date=${date}&exclude_res_id=${resId}`,
       )
       .then(setBookedHours);
+    api.get<DayConfig>(`/day-config?date=${date}`).then(setDayCfg);
   }, [facilityId, date, resId]);
 
   async function onSubmit(e: FormEvent) {
@@ -137,6 +139,8 @@ export default function EditPage() {
             value={hours}
             onChange={setHours}
             autoFillRange
+            openHour={dayCfg?.open_hour ?? 9}
+            closeHour={dayCfg?.close_hour ?? 18}
           />
         </div>
 

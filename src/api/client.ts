@@ -19,10 +19,11 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isForm = typeof FormData !== "undefined" && options.body instanceof FormData;
   const res = await fetch(`${API_BASE}/api${path}`, {
     credentials: "include",
     headers:
-      options.body != null
+      options.body != null && !isForm
         ? { "Content-Type": "application/json", ...(options.headers || {}) }
         : options.headers,
     ...options,
@@ -49,6 +50,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
+/** Multipart 업로드. Content-Type 은 브라우저가 boundary 와 함께 자동 설정. */
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  return request<T>(path, { method: "POST", body: form, headers: {} });
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
@@ -57,4 +63,5 @@ export const api = {
     request<T>(path, { method: "PUT", body: body != null ? JSON.stringify(body) : undefined }),
   del: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "DELETE", body: body != null ? JSON.stringify(body) : undefined }),
+  upload: <T>(path: string, form: FormData) => upload<T>(path, form),
 };

@@ -4,7 +4,9 @@ import { assetUrl } from "../api/client";
 import { useOrg } from "../hooks/useOrg";
 import type { Availability } from "../api/types";
 
-const HOURS = Array.from({ length: 9 }, (_, i) => 9 + i); // 9..17
+function hoursRange(open: number, close: number) {
+  return Array.from({ length: Math.max(0, close - open) }, (_, i) => open + i);
+}
 
 /** Local (no external network) placeholder image for facilities without one. */
 function placeholderImage(label: string): string {
@@ -74,7 +76,9 @@ export default function HomePage() {
       {selectedDate && data && !data.is_reservable && (
         <ul className="flash-messages">
           <li>
-            예약은 {data.min_date} 부터 {data.max_date} 까지만 가능합니다.
+            {data.is_open === false
+              ? `해당 날짜는 휴무일입니다${data.closed_reason ? ` (${data.closed_reason})` : ""}.`
+              : `예약은 ${data.min_date} 부터 ${data.max_date} 까지만 가능합니다.`}
           </li>
         </ul>
       )}
@@ -111,7 +115,7 @@ export default function HomePage() {
 
                   {showStatus && (
                     <div className="status-bar">
-                      {HOURS.map((h) => (
+                      {hoursRange(data.open_hour, data.close_hour).map((h) => (
                         <div
                           key={h}
                           className={`status-slot ${f.hours[String(h)]}`}

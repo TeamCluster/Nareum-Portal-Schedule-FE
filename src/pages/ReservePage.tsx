@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useOrg } from "../hooks/useOrg";
-import type { Facility } from "../api/types";
+import type { DayConfig, Facility } from "../api/types";
 import { formatPhoneNumber } from "../lib/phone";
 import TimeSlotPicker from "../components/TimeSlotPicker";
 
@@ -23,6 +23,7 @@ export default function ReservePage() {
   const navigate = useNavigate();
 
   const [facility, setFacility] = useState<Facility | null>(null);
+  const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
   const [bookedHours, setBookedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
   const [name, setName] = useState("");
@@ -47,6 +48,7 @@ export default function ReservePage() {
     api
       .get<number[]>(`/facilities/${facilityId}/booked-times?date=${date}`)
       .then(setBookedHours);
+    api.get<DayConfig>(`/day-config?date=${date}`).then(setDayCfg);
   }, [facilityId, date, navigate]);
 
   const isPractice = facility?.type.includes("연습") ?? false;
@@ -131,13 +133,28 @@ export default function ReservePage() {
         </div>
 
         <div className="form-section">
-          <h4>이용 시간 (최대 2시간, 연속 선택)</h4>
-          <TimeSlotPicker
-            bookedHours={bookedHours}
-            value={hours}
-            onChange={setHours}
-            maxHours={2}
-          />
+          <h4>
+            이용 시간 (최대 2시간, 연속 선택)
+            {dayCfg && (
+              <span style={{ color: "var(--text-sub)", fontWeight: 400, fontSize: "0.85rem", marginLeft: 8 }}>
+                운영 {String(dayCfg.open_hour).padStart(2, "0")}:00~{String(dayCfg.close_hour).padStart(2, "0")}:00
+              </span>
+            )}
+          </h4>
+          {dayCfg && !dayCfg.is_open ? (
+            <ul className="flash-messages">
+              <li>해당 날짜는 휴무일입니다{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}.</li>
+            </ul>
+          ) : (
+            <TimeSlotPicker
+              bookedHours={bookedHours}
+              value={hours}
+              onChange={setHours}
+              maxHours={2}
+              openHour={dayCfg?.open_hour ?? 9}
+              closeHour={dayCfg?.close_hour ?? 18}
+            />
+          )}
         </div>
 
         <div className="form-section">

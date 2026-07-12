@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
-import type { Facility } from "../../api/types";
+import type { DayConfig, Facility } from "../../api/types";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
 import ReservationFields, { ApplicantState } from "../../components/ReservationFields";
 
@@ -23,6 +23,7 @@ export default function AddPage() {
   const [date, setDate] = useState("");
   const [bookedHours, setBookedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
+  const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
   const [fields, setFields] = useState<ApplicantState>(EMPTY);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -30,6 +31,14 @@ export default function AddPage() {
   useEffect(() => {
     api.get<Facility[]>("/facilities").then(setFacilities);
   }, []);
+
+  useEffect(() => {
+    if (!date) {
+      setDayCfg(null);
+      return;
+    }
+    api.get<DayConfig>(`/day-config?date=${date}`).then(setDayCfg);
+  }, [date]);
 
   useEffect(() => {
     if (!facilityId || !date) {
@@ -102,7 +111,14 @@ export default function AddPage() {
             onChange={setHours}
             autoFillRange
             disabled={slotsDisabled}
+            openHour={dayCfg?.open_hour ?? 9}
+            closeHour={dayCfg?.close_hour ?? 18}
           />
+          {dayCfg && !dayCfg.is_open && (
+            <p className="timeline-note" style={{ color: "var(--danger)" }}>
+              ⚠ 선택한 날짜는 휴무일입니다{dayCfg.closed_reason ? ` (${dayCfg.closed_reason})` : ""}. 저장 시 거부될 수 있습니다.
+            </p>
+          )}
         </div>
 
         <ReservationFields value={fields} onChange={setFields} />

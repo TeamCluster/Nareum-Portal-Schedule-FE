@@ -2,10 +2,6 @@
 // Public mode: toggle up to `maxHours` contiguous slots.
 // Admin mode (autoFillRange): clicking fills the contiguous range to the click.
 
-const OPEN_HOUR = 9;
-const CLOSE_HOUR = 18;
-const HOURS = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i);
-
 interface Props {
   bookedHours: number[];
   value: number[];
@@ -14,6 +10,8 @@ interface Props {
   autoFillRange?: boolean;
   disabled?: boolean;
   disabledMessage?: string;
+  openHour?: number;
+  closeHour?: number;
 }
 
 export default function TimeSlotPicker({
@@ -24,7 +22,12 @@ export default function TimeSlotPicker({
   autoFillRange = false,
   disabled = false,
   disabledMessage = "시설과 날짜를 먼저 선택해주세요.",
+  openHour = 9,
+  closeHour = 18,
 }: Props) {
+  const OPEN_HOUR = openHour;
+  const CLOSE_HOUR = closeHour;
+  const HOURS = Array.from({ length: Math.max(0, CLOSE_HOUR - OPEN_HOUR) }, (_, i) => OPEN_HOUR + i);
   const booked = new Set(bookedHours);
   const selected = new Set(value);
 

@@ -8,6 +8,7 @@ export function makeOrgApi(slug: string) {
     post: <T>(sub: string, body?: unknown) => api.post<T>(p(sub), body),
     put: <T>(sub: string, body?: unknown) => api.put<T>(p(sub), body),
     del: <T>(sub: string, body?: unknown) => api.del<T>(p(sub), body),
+    upload: <T>(sub: string, form: FormData) => api.upload<T>(p(sub), form),
   };
 }
 

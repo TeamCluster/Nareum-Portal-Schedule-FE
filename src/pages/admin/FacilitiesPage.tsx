@@ -1,9 +1,9 @@
-import { FormEvent, useEffect, useState } from "react";
-import { ApiError } from "../../api/client";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { ApiError, assetUrl } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
 import type { Facility } from "../../api/types";
 
-const EMPTY = { name: "", type: "", capacity: "", description: "", image_url: "" };
+const EMPTY = { name: "", type: "", capacity: "", description: "" };
 type FormState = typeof EMPTY;
 
 export default function FacilitiesPage() {
@@ -11,6 +11,8 @@ export default function FacilitiesPage() {
   const [items, setItems] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [addFile, setAddFile] = useState<File | null>(null);
+  const addFileRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<Facility | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY);
   const [error, setError] = useState("");
@@ -27,16 +29,24 @@ export default function FacilitiesPage() {
       type: f.type,
       capacity: f.capacity === "" ? null : Number(f.capacity),
       description: f.description,
-      image_url: f.image_url,
     };
+  }
+
+  async function uploadImage(facilityId: number, file: File) {
+    const fd = new FormData();
+    fd.append("image", file);
+    await api.upload(`/admin/facilities/${facilityId}/image`, fd);
   }
 
   async function add(e: FormEvent) {
     e.preventDefault();
     setError("");
     try {
-      await api.post("/admin/facilities", bodyOf(form));
+      const res = await api.post<{ facility: Facility }>("/admin/facilities", bodyOf(form));
+      if (addFile) await uploadImage(res.facility.id, addFile);
       setForm(EMPTY);
+      setAddFile(null);
+      if (addFileRef.current) addFileRef.current.value = "";
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "시설 추가에 실패했습니다.");
@@ -50,7 +60,6 @@ export default function FacilitiesPage() {
       type: f.type,
       capacity: f.capacity == null ? "" : String(f.capacity),
       description: f.description || "",
-      image_url: f.image_url || "",
     });
   }
 
@@ -65,8 +74,35 @@ export default function FacilitiesPage() {
     }
   }
 
+  async function onEditImage(file: File) {
+    if (!editing) return;
+    try {
+      const r = await uploadImageReturn(editing.id, file);
+      // 반영: 목록 + 편집 대상 갱신
+      setItems((prev) => prev.map((x) => (x.id === editing.id ? { ...x, image_url: r } : x)));
+      setEditing((prev) => (prev ? { ...prev, image_url: r } : prev));
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "이미지 업로드에 실패했습니다.");
+    }
+  }
+
+  async function uploadImageReturn(facilityId: number, file: File) {
+    const fd = new FormData();
+    fd.append("image", file);
+    const r = await api.upload<{ image_url: string }>(`/admin/facilities/${facilityId}/image`, fd);
+    return r.image_url;
+  }
+
+  async function removeImage() {
+    if (!editing) return;
+    if (!window.confirm("현재 이미지를 삭제하시겠습니까?")) return;
+    await api.del(`/admin/facilities/${editing.id}/image`);
+    setItems((prev) => prev.map((x) => (x.id === editing.id ? { ...x, image_url: null } : x)));
+    setEditing((prev) => (prev ? { ...prev, image_url: null } : prev));
+  }
+
   async function remove(f: Facility) {
-    if (!window.confirm(`'${f.name}' 시설을 삭제하시겠습니까?\n해당 시설의 예약 내역도 함께 삭제됩니다.`)) return;
+    if (!window.confirm(`'${f.name}' 시설을 삭제하시겠습니까?\n해당 시설의 예약 내역·이미지도 함께 삭제됩니다.`)) return;
     try {
       await api.del(`/admin/facilities/${f.id}`);
       load();
@@ -79,11 +115,7 @@ export default function FacilitiesPage() {
     <>
       <h2 className="page-title">시설 관리</h2>
 
-      {error && (
-        <ul className="flash-messages">
-          <li>{error}</li>
-        </ul>
-      )}
+      {error && <ul className="flash-messages"><li>{error}</li></ul>}
 
       <form className="form-card" onSubmit={add}>
         <div className="form-section" style={{ marginBottom: 0 }}>
@@ -105,8 +137,9 @@ export default function FacilitiesPage() {
                      onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
             </div>
             <div className="field">
-              <label>이미지 경로 (예: /static/img/room001.jpg)</label>
-              <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
+              <label>예시 사진 (선택, 5MB 이하)</label>
+              <input ref={addFileRef} type="file" accept="image/*"
+                     onChange={(e) => setAddFile(e.target.files?.[0] || null)} />
             </div>
           </div>
           <div className="field">
@@ -125,7 +158,7 @@ export default function FacilitiesPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>No.</th>
+              <th>사진</th>
               <th>이름</th>
               <th>유형</th>
               <th>수용</th>
@@ -136,7 +169,13 @@ export default function FacilitiesPage() {
           <tbody>
             {items.map((f) => (
               <tr key={f.id}>
-                <td>{f.id}</td>
+                <td>
+                  {f.image_url ? (
+                    <img src={assetUrl(f.image_url)} alt={f.name} className="fac-thumb" />
+                  ) : (
+                    <span className="fac-thumb fac-thumb-empty">없음</span>
+                  )}
+                </td>
                 <td>{f.name}</td>
                 <td>{f.type}</td>
                 <td>{f.capacity ?? "-"}</td>
@@ -157,6 +196,28 @@ export default function FacilitiesPage() {
         <div className="modal-overlay" onClick={() => setEditing(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>시설 수정 — {editing.name}</h3>
+
+            <div className="field">
+              <label>예시 사진</label>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 6 }}>
+                {editing.image_url ? (
+                  <img src={assetUrl(editing.image_url)} alt={editing.name} className="fac-thumb-lg" />
+                ) : (
+                  <span className="fac-thumb-lg fac-thumb-empty">사진 없음</span>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <input type="file" accept="image/*"
+                         onChange={(e) => { const f = e.target.files?.[0]; if (f) onEditImage(f); }} />
+                  {editing.image_url && (
+                    <button type="button" className="btn btn-danger" onClick={removeImage}>사진 삭제</button>
+                  )}
+                </div>
+              </div>
+              <p style={{ color: "var(--text-sub)", fontSize: "0.78rem", marginTop: 6 }}>
+                새 사진을 올리면 기존 사진은 자동으로 삭제됩니다.
+              </p>
+            </div>
+
             <div className="field">
               <label>이름</label>
               <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
@@ -169,10 +230,6 @@ export default function FacilitiesPage() {
               <label>수용 인원</label>
               <input type="number" min={0} value={editForm.capacity}
                      onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} />
-            </div>
-            <div className="field">
-              <label>이미지 경로</label>
-              <input value={editForm.image_url} onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })} />
             </div>
             <div className="field">
               <label>설명</label>
