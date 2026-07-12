@@ -528,15 +528,27 @@
     color: #b91c1c;
 }
 
+/* 시설명은 세로 표기 → 좁은 열에서도 칸을 넘지 않고 전체 이름이 보임 */
 .week-grid th.wg-fac {
-    min-width: 52px;
-    max-width: 52px;
-    font-size: 0.64rem;
-    font-weight: 600;
+    width: 34px;
+    min-width: 34px;
+    max-width: 34px;
     color: #475569;
-    padding: 4px 1px;
-    line-height: 1.1;
-    word-break: keep-all;
+    padding: 8px 0 6px;
+    vertical-align: bottom;
+    overflow: hidden;
+}
+
+.week-grid th.wg-fac span {
+    writing-mode: vertical-rl;
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1.15;
+    max-height: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .week-grid .wg-hour {
@@ -585,12 +597,16 @@
 /* FullCalendar(월간) — 앱 디자인에 맞춘 변수/스타일 오버라이드 */
 .calendar-box {
     --fc-border-color: var(--border-color);
-    --fc-button-bg-color: var(--primary-color);
+    /* 주간(.btn-check)과 통일: 흰 배경 · 파란 테두리 · 파란 글씨 */
+    --fc-button-bg-color: #ffffff;
     --fc-button-border-color: var(--primary-color);
-    --fc-button-hover-bg-color: #003d99;
-    --fc-button-hover-border-color: #003d99;
-    --fc-button-active-bg-color: #003d99;
-    --fc-button-active-border-color: #003d99;
+    --fc-button-text-color: var(--primary-color);
+    --fc-button-hover-bg-color: #f0f7ff;
+    --fc-button-hover-border-color: var(--primary-color);
+    --fc-button-hover-text-color: var(--primary-color);
+    --fc-button-active-bg-color: #f0f7ff;
+    --fc-button-active-border-color: var(--primary-color);
+    --fc-button-active-text-color: var(--primary-color);
     --fc-today-bg-color: rgba(0, 82, 204, 0.06);
     --fc-event-bg-color: var(--primary-color);
     --fc-event-border-color: var(--primary-color);
@@ -613,6 +629,7 @@
     text-transform: none;
     font-weight: 600;
     border-radius: 8px;
+    border-width: 1.5px;
     box-shadow: none;
     padding: 6px 12px;
 }
