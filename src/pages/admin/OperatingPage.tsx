@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
+import Collapsible from "../../components/Collapsible";
 import type {
   CommonHoliday, Facility, HolidayType, OperatingHour, OrgHolidaysView, RecurringBlock,
 } from "../../api/types";
@@ -12,8 +13,15 @@ const TYPE_LABEL: Record<HolidayType, string> = { closure: "휴무일", holiday:
 function hh(h: number) {
   return `${String(h).padStart(2, "0")}:00`;
 }
-function yearOf(date: string) {
-  return date.slice(0, 4);
+
+function groupByYear<T extends { date: string }>(items: T[]): [string, T[]][] {
+  const m = new Map<string, T[]>();
+  for (const it of items) {
+    const y = it.date.slice(0, 4);
+    if (!m.has(y)) m.set(y, []);
+    m.get(y)!.push(it);
+  }
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 export default function OperatingPage() {
@@ -27,7 +35,6 @@ export default function OperatingPage() {
   const [closureForm, setClosureForm] = useState<{ date: string; name: string; type: HolidayType }>({
     date: "", name: "", type: "closure",
   });
-  const [holYear, setHolYear] = useState<string>("all");
   const [holErr, setHolErr] = useState("");
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -88,16 +95,8 @@ export default function OperatingPage() {
     loadHolidays();
   }
 
-  // 연도 목록 + 필터
-  const years = useMemo(() => {
-    const s = new Set<string>();
-    hol?.common.forEach((h) => s.add(yearOf(h.date)));
-    hol?.place.forEach((p) => s.add(yearOf(p.date)));
-    return [...s].sort();
-  }, [hol]);
-  const inYear = (date: string) => holYear === "all" || yearOf(date) === holYear;
-  const common = (hol?.common || []).filter((h) => inYear(h.date));
-  const place = (hol?.place || []).filter((p) => inYear(p.date));
+  const commonByYear = useMemo(() => groupByYear(hol?.common || []), [hol]);
+  const placeByYear = useMemo(() => groupByYear(hol?.place || []), [hol]);
 
   async function addBlock() {
     setBlkErr("");
@@ -205,66 +204,64 @@ export default function OperatingPage() {
             기관 휴무일 추가
           </button>
 
-          <div className="cal-toolbar" style={{ marginBottom: 10 }}>
-            <strong>등록 현황</strong>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <select value={holYear} onChange={(e) => setHolYear(e.target.value)}>
-                <option value="all">전체 연도</option>
-                {years.map((y) => <option key={y} value={y}>{y}년</option>)}
-              </select>
-            </div>
-          </div>
-
-          <h5 style={{ margin: "6px 0" }}>공통 휴무일 (슈퍼 관리자 지정)</h5>
-          {common.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>해당 연도의 공통 휴무일이 없습니다.</p>
+          <h5 style={{ margin: "16px 0 8px" }}>공통 휴무일 (슈퍼 관리자 지정) · 연도별</h5>
+          {commonByYear.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>등록된 공통 휴무일이 없습니다.</p>
           ) : (
-            <table className="admin-table" style={{ marginBottom: 18 }}>
-              <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>이 기관 적용</th></tr></thead>
-              <tbody>
-                {common.map((h) => (
-                  <tr key={h.id} className={h.excluded ? "deleted" : ""}>
-                    <td>{h.date}</td>
-                    <td>
-                      <span className={`status-pill ${h.type === "closure" ? "rejected" : "pending"}`}>
-                        {TYPE_LABEL[h.type]}
-                      </span>
-                    </td>
-                    <td>{h.name || "-"}</td>
-                    <td>
-                      {h.excluded ? (
-                        <button className="btn btn-check" onClick={() => toggleExclude(h)}>제외됨 · 다시 적용</button>
-                      ) : (
-                        <button className="btn btn-danger" onClick={() => toggleExclude(h)}>이 기관에서 제외</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            commonByYear.map(([y, list]) => (
+              <Collapsible key={y} title={`${y}년`} count={list.length}>
+                <table className="admin-table">
+                  <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>이 기관 적용</th></tr></thead>
+                  <tbody>
+                    {list.map((h) => (
+                      <tr key={h.id} className={h.excluded ? "deleted" : ""}>
+                        <td>{h.date}</td>
+                        <td>
+                          <span className={`status-pill ${h.type === "closure" ? "rejected" : "pending"}`}>
+                            {TYPE_LABEL[h.type]}
+                          </span>
+                        </td>
+                        <td>{h.name || "-"}</td>
+                        <td>
+                          {h.excluded ? (
+                            <button className="btn btn-check" onClick={() => toggleExclude(h)}>제외됨 · 다시 적용</button>
+                          ) : (
+                            <button className="btn btn-danger" onClick={() => toggleExclude(h)}>이 기관에서 제외</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Collapsible>
+            ))
           )}
 
-          <h5 style={{ margin: "6px 0" }}>기관 지정 휴무일</h5>
-          {place.length === 0 ? (
-            <p style={{ color: "var(--text-sub)" }}>해당 연도의 기관 지정 휴무일이 없습니다.</p>
+          <h5 style={{ margin: "18px 0 8px" }}>기관 지정 휴무일 · 연도별</h5>
+          {placeByYear.length === 0 ? (
+            <p style={{ color: "var(--text-sub)" }}>등록된 기관 지정 휴무일이 없습니다.</p>
           ) : (
-            <table className="admin-table">
-              <thead><tr><th>날짜</th><th>유형</th><th>사유</th><th>관리</th></tr></thead>
-              <tbody>
-                {place.map((c) => (
-                  <tr key={c.id}>
-                    <td>{c.date}</td>
-                    <td>
-                      <span className={`status-pill ${c.type === "closure" ? "rejected" : "pending"}`}>
-                        {TYPE_LABEL[c.type]}
-                      </span>
-                    </td>
-                    <td>{c.reason || "-"}</td>
-                    <td><button className="btn btn-danger" onClick={() => delClosure(c.id)}>삭제</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            placeByYear.map(([y, list]) => (
+              <Collapsible key={y} title={`${y}년`} count={list.length}>
+                <table className="admin-table">
+                  <thead><tr><th>날짜</th><th>유형</th><th>사유</th><th>관리</th></tr></thead>
+                  <tbody>
+                    {list.map((c) => (
+                      <tr key={c.id}>
+                        <td>{c.date}</td>
+                        <td>
+                          <span className={`status-pill ${c.type === "closure" ? "rejected" : "pending"}`}>
+                            {TYPE_LABEL[c.type]}
+                          </span>
+                        </td>
+                        <td>{c.reason || "-"}</td>
+                        <td><button className="btn btn-danger" onClick={() => delClosure(c.id)}>삭제</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Collapsible>
+            ))
           )}
         </div>
       </div>

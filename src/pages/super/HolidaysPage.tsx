@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../api/client";
 import { superApi } from "../../api/super";
+import Collapsible from "../../components/Collapsible";
 import type { CommonHoliday, HolidayType } from "../../api/types";
 
 const TYPE_LABEL: Record<HolidayType, string> = { closure: "휴무일", holiday: "공휴일" };
@@ -151,8 +152,7 @@ export default function SuperHolidaysPage() {
         <div className="empty-state">등록된 공통 휴무일이 없습니다.</div>
       ) : (
         grouped.map(([y, list]) => (
-          <div key={y} style={{ marginBottom: 20 }}>
-            <h4 style={{ margin: "0 0 8px" }}>{y}년 <span style={{ color: "var(--text-sub)", fontWeight: 400 }}>({list.length}건)</span></h4>
+          <Collapsible key={y} title={`${y}년`} count={list.length}>
             <table className="admin-table">
               <thead><tr><th>날짜</th><th>유형</th><th>이름</th><th>구분</th><th>관리</th></tr></thead>
               <tbody>
@@ -175,7 +175,7 @@ export default function SuperHolidaysPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Collapsible>
         ))
       )}
     </>
