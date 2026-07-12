@@ -24,6 +24,7 @@ export default function PublicLayout() {
       <footer>
         <div className="container">
           <div className="footer-content">
+            {/* TODO(배포): 아래 주소/전화/이메일을 실제 센터 정보로 교체할 것 (현재 placeholder) */}
             <div className="footer-info">
               <h3>나름청소년활동센터</h3>
               <p>주소: 경기도 나름시 청소년로 123</p>
