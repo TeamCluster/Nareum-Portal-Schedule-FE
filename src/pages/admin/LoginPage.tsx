@@ -1,14 +1,24 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import type { PlaceInfo } from "../../api/types";
 
 export default function LoginPage() {
-  const { base, api } = useOrg();
+  const { slug, base, api } = useOrg();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [info, setInfo] = useState<PlaceInfo | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get<PlaceInfo>("/info").then(setInfo).catch(() => {});
+  }, [slug]);
+
+  const orgName = info?.full_name || slug;
+  useDocumentTitle(`${info?.short_name || slug} 관리자 로그인`);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -28,7 +38,7 @@ export default function LoginPage() {
       <form className="login-card" onSubmit={onSubmit}>
         <h2 style={{ marginTop: 0 }}>관리자 로그인</h2>
         <p style={{ color: "var(--text-sub)", fontSize: "0.9rem" }}>
-          나름센터 대관 관리 페이지
+          {orgName} 대관 관리 페이지
         </p>
         {error && (
           <ul className="flash-messages">

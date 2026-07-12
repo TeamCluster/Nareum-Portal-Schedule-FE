@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { superApi } from "../api/super";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export default function SuperLayout() {
   const navigate = useNavigate();
+  useDocumentTitle("슈퍼 관리자 콘솔");
   const [showPw, setShowPw] = useState(false);
   const [newPw, setNewPw] = useState("");
 

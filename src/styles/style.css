@@ -172,9 +172,11 @@ button:disabled {
     border: none;
 }
 
-input[type="text"],
-input[type="number"],
-select {
+/* 모든 텍스트류 입력(타입 명시 여부 무관) + select + textarea 를 동일하게.
+   체크박스/라디오는 제외. 이 규칙 하나로 관리자/예약/슈퍼 폼의 입력 스타일을 통일. */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
     width: 100%;
     padding: 10px 14px;
     border-radius: 8px;
@@ -182,12 +184,16 @@ select {
     background-color: white;
     font-size: 0.95rem;
     color: var(--text-main);
+    font-family: inherit;
+    line-height: 1.4;
     transition: all 0.2s;
     margin-top: 6px;
+    box-sizing: border-box;
 }
 
-input:focus,
-select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);

@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { assetUrl } from "../api/client";
 import { useOrg } from "../hooks/useOrg";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import type { PlaceInfo } from "../api/types";
 
 export default function PublicLayout() {
   const { slug, base, api } = useOrg();
   const [info, setInfo] = useState<PlaceInfo | null>(null);
   const [notFound, setNotFound] = useState(false);
+
+  useDocumentTitle(
+    notFound ? "기관을 찾을 수 없습니다" : info ? `${info.full_name} 대관 예약` : null,
+  );
 
   useEffect(() => {
     setNotFound(false);

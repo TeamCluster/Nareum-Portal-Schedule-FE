@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useOrg } from "../hooks/useOrg";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import type { PlaceInfo } from "../api/types";
 
 export default function AdminLayout() {
@@ -8,6 +9,8 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [info, setInfo] = useState<PlaceInfo | null>(null);
+
+  useDocumentTitle(`${info?.short_name || slug} 관리자`);
 
   const links = [
     { to: base + "/manage", label: "대시보드", end: true },

@@ -2,8 +2,10 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { superApi } from "../../api/super";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function SuperLoginPage() {
+  useDocumentTitle("슈퍼 관리자 로그인");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

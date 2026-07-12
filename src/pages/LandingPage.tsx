@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 /**
  * 루트("/") 안내 페이지. 이 서비스는 기관별(slug) URL 로 접속한다.
  * 기관 예약 페이지는 /<slug>, 슈퍼 콘솔은 /super.
  */
 export default function LandingPage() {
+  useDocumentTitle("대관 예약 시스템");
   return (
     <div className="empty-state" style={{ margin: "80px auto", maxWidth: 560 }}>
       <h1 style={{ marginBottom: 12 }}>대관 예약 시스템</h1>
