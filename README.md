@@ -4,7 +4,7 @@
 백엔드 Flask API(`Nareum-Portal-Schedule`)를 소비합니다.
 
 ## 실행
-백엔드를 먼저 `http://localhost:5000` 에서 실행한 뒤:
+백엔드를 먼저 `http://localhost:8000` 에서 실행한 뒤:
 ```bash
 npm install
 npm run dev        # http://localhost:5173

@@ -51,7 +51,9 @@ export default function PublicLayout() {
                 onError={() => setImgError(true)}
               />
             ) : (
-              <span className="logo-text">{info?.full_name || info?.short_name || ""}</span>
+              <span className="logo-text" style={{ margin: "0% 15%" }}>
+                {info?.full_name || info?.short_name || ""}
+              </span>
             )}
           </Link>
           <div className="header-actions">
@@ -63,7 +65,8 @@ export default function PublicLayout() {
       </header>
 
       <main className="container">
-        <Outlet />
+        {/* 하위 페이지가 기관 정보를 재조회하지 않도록 컨텍스트로 전달. */}
+        <Outlet context={{ info }} />
       </main>
 
       <footer>

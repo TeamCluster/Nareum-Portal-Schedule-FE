@@ -309,6 +309,37 @@ a {
 .collapsible-body { padding: 12px 16px; }
 .collapsible-body .admin-table { box-shadow: none; }
 
+/* 모바일: 2단 입력 줄을 1단으로 풀고 카드 여백을 줄인다. */
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 1.3rem;
+  }
+
+  .form-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    /* .field 의 margin-bottom(14px) 이 세로 간격을 맡는다. */
+  }
+
+  .participant-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .complete-card {
+    padding: 28px 20px;
+    margin: 24px auto;
+  }
+}
+
 /* Auth login card */
 .login-wrap {
   min-height: 100vh;
