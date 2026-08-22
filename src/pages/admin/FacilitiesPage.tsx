@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ApiError, assetUrl } from "../../api/client";
+import { ApiError, assetUrl, validateImageFile } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
 import type { Facility } from "../../api/types";
 import { FACILITY_TYPES } from "../../lib/facilityTypes";
@@ -41,6 +41,8 @@ export default function FacilitiesPage() {
   }
 
   async function uploadImage(facilityId: number, file: File) {
+    const invalid = validateImageFile(file);
+    if (invalid) throw new ApiError(invalid, 400);
     const fd = new FormData();
     fd.append("image", file);
     await api.upload(`/admin/facilities/${facilityId}/image`, fd);
@@ -95,6 +97,8 @@ export default function FacilitiesPage() {
   }
 
   async function uploadImageReturn(facilityId: number, file: File) {
+    const invalid = validateImageFile(file);
+    if (invalid) throw new ApiError(invalid, 400);
     const fd = new FormData();
     fd.append("image", file);
     const r = await api.upload<{ image_url: string }>(`/admin/facilities/${facilityId}/image`, fd);

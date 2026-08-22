@@ -10,6 +10,26 @@ export function assetUrl(path: string | null | undefined): string {
   return `${API_BASE}${path}`;
 }
 
+/**
+ * 업로드 전 클라이언트 사전 검사.
+ * 서버는 5MB(이미지)·6MB(요청 전체) 상한을 강제하는데, 상한을 넘는 요청은
+ * 본문을 다 보내기 전에 끊기므로 브라우저에는 네트워크 오류로만 보인다.
+ * 보내기 전에 걸러서 이유를 알려준다. (서버 검증을 대체하지 않는다.)
+ */
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+export function validateImageFile(file: File): string | null {
+  if (!IMAGE_TYPES.includes(file.type)) {
+    return "이미지 파일(png, jpg, gif, webp)만 업로드할 수 있습니다.";
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    const mb = (file.size / 1024 / 1024).toFixed(1);
+    return `이미지 용량은 5MB 이하여야 합니다. (선택한 파일: ${mb}MB)`;
+  }
+  return null;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {

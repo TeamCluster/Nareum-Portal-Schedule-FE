@@ -37,7 +37,8 @@ export default function CheckPage() {
   async function cancel(res: Reservation) {
     if (!window.confirm("정말로 예약을 취소하시겠습니까?")) return;
     try {
-      await api.post(`/reservations/${res.id}/cancel`);
+      // 취소에는 본인 확인이 필요하다 — 조회에 쓴 이름/연락처를 그대로 보낸다.
+      await api.post(`/reservations/${res.id}/cancel`, { name, contact });
       // Refresh the list.
       const data = await api.post<Reservation[]>("/reservations/lookup", { name, contact });
       setReservations(data);
