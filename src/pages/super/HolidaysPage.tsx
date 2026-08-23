@@ -101,7 +101,7 @@ export default function SuperHolidaysPage() {
               <li style={{ background: "#dcfce7", color: "#166534", borderColor: "#86efac" }}>{syncMsg}</li>
             </ul>
           )}
-          <div className="cal-nav">
+          <div className="cal-toolbar-nav">
             <input type="number" min={2000} max={2100} value={syncYear} style={{ width: 120 }}
                    onChange={(e) => setSyncYear(e.target.value)} />
             <button className="btn btn-primary" onClick={sync} disabled={syncing}>

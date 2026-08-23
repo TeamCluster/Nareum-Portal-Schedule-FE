@@ -127,7 +127,7 @@ export default function DashboardPage() {
       <div className="calendar-box">
         <div className="cal-toolbar">
           {calView === "week" ? (
-            <div className="cal-nav">
+            <div className="cal-toolbar-nav">
               <button className="btn btn-check" disabled={!weekGrid}
                       onClick={() => weekGrid && setWeekAnchor(weekGrid.prev_week)}>‹</button>
               <button className="btn btn-check" onClick={() => setWeekAnchor(todayStr())}>이번 주</button>

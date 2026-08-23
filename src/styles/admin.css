@@ -448,7 +448,11 @@
     margin-bottom: 16px;
 }
 
-.cal-nav {
+/* 툴바 좌측(이전/이번주/다음 + 기간 표기) 묶음.
+   home.css 의 .cal-nav 는 공개 달력의 30x30 화살표 '버튼' 이다. 이름이 겹치면
+   나중에 로드되는 home.css 가 이겨서 이 컨테이너가 30px 상자로 찌그러지고,
+   버튼용 :hover 테두리가 묶음 전체에 그려진다. 그래서 이름을 분리해 둔다. */
+.cal-toolbar-nav {
     display: flex;
     align-items: center;
     gap: 8px;
