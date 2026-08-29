@@ -4,6 +4,7 @@ import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
 import type { Reservation } from "../../api/types";
 import { dateOf, formatTime } from "../../lib/datetime";
+import { equipmentSummary, participantSummary } from "../../lib/reservationForm";
 
 const PRESET_REASONS = [
   "신청 자격 미달",
@@ -66,6 +67,7 @@ export default function RequestsPage() {
             <tr>
               <th>시설명</th>
               <th>날짜 / 시간</th>
+              <th>활동내용 / 인원</th>
               <th>신청인</th>
               <th>작업</th>
             </tr>
@@ -76,6 +78,15 @@ export default function RequestsPage() {
                 <td>{r.facility?.name}</td>
                 <td>
                   {dateOf(r.start_time)} {formatTime(r.start_time)}~{formatTime(r.end_time)}
+                </td>
+                <td>
+                  {r.activity || "-"}
+                  <br />
+                  <span style={{ color: "var(--text-sub)", fontSize: "0.82rem" }}>
+                    {participantSummary(r.participant_info) || "인원 정보 없음"}
+                    {r.requested_equipment.length > 0 &&
+                      ` / ${equipmentSummary(r.requested_equipment)}`}
+                  </span>
                 </td>
                 <td>
                   <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>

@@ -7,6 +7,8 @@ import { useOrg } from "../../hooks/useOrg";
 import type { CalendarEvent, DashboardData, DayGrid, WeekGrid } from "../../api/types";
 import { formatTime } from "../../lib/datetime";
 import WeekGridView from "../../components/WeekGrid";
+import AttendanceControls, { attendanceLabel } from "../../components/AttendanceControls";
+import { recurringKindLabel } from "../../lib/recurringKinds";
 
 function todayStr() {
   const d = new Date();
@@ -32,13 +34,20 @@ export default function DashboardPage() {
   const [calView, setCalView] = useState<"week" | "month">("week");
   const [weekAnchor, setWeekAnchor] = useState<string>("");
   const [weekGrid, setWeekGrid] = useState<WeekGrid | null>(null);
+  const [notice, setNotice] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
+  function loadDay() {
     const q = date ? `?date=${date}` : "";
     api.get<DashboardData>(`/admin/dashboard${q}`).then(setData);
     api.get<DayGrid>(`/admin/day-grid${q}`).then(setGrid);
-  }, [date]);
+  }
+  useEffect(loadDay, [date]);
+
+  function afterAction(message: string) {
+    setNotice(message);
+    loadDay();
+  }
 
   useEffect(() => {
     api.get<CalendarEvent[]>("/admin/calendar-events").then(setEvents);
@@ -124,6 +133,58 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* 이용 결과 기록 + 현장 연장 — 당일 창구 업무. */}
+      <div className="box" style={{ marginBottom: 20 }}>
+        <h3>{data.selected_date} 이용 처리</h3>
+        {notice && (
+          <ul className="flash-messages">
+            <li style={{ background: "#dcfce7", color: "#166534", borderColor: "#86efac" }}>
+              {notice}
+            </li>
+          </ul>
+        )}
+        {data.todays_groups.length === 0 ? (
+          <p style={{ color: "var(--text-sub)" }}>해당 날짜에 예약이 없습니다.</p>
+        ) : (
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>시설</th>
+                <th>시간</th>
+                <th>신청인</th>
+                <th>이용 결과</th>
+                <th>처리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.todays_groups.flatMap((g) =>
+                g.reservations.map((r) => (
+                  <tr key={r.id}>
+                    <td>{g.facility_name}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {formatTime(r.start_time)}~{formatTime(r.end_time)}
+                    </td>
+                    <td>
+                      <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
+                        {r.applicant_name}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className={`attendance-pill ${r.attendance || "none"}`}>
+                        {attendanceLabel(r.attendance)}
+                      </span>
+                    </td>
+                    <td>
+                      <AttendanceControls reservation={r} onDone={afterAction} />
+                    </td>
+                  </tr>
+                )),
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       <div className="calendar-box">
         <div className="cal-toolbar">
           {calView === "week" ? (
@@ -204,9 +265,9 @@ function DayGridMatrix({ grid, onPick }: { grid: DayGrid; onPick: (resId: number
                 if (s.type === "block") {
                   return (
                     <td key={i} className="dg-cell block" colSpan={span}
-                        title={`${s.title} · ${s.from_hour}:00~${s.to_hour}:00 · 정기활동`}>
+                        title={`${s.title} · ${s.from_hour}:00~${s.to_hour}:00 · 정기활동(${recurringKindLabel(s.kind)})`}>
                       <span className="dg-name">{s.title}</span>
-                      <span className="dg-time">정기</span>
+                      <span className="dg-time">{recurringKindLabel(s.kind)}</span>
                     </td>
                   );
                 }

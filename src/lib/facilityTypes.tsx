@@ -1,15 +1,17 @@
 import { ReactNode } from "react";
 
 /**
- * 시설 유형 사전 정의 — 각 유형마다 고유 픽토그램과 장비선택 UI 노출 여부.
+ * 시설 유형 사전 정의 — 각 유형마다 고유 픽토그램.
  * 관리자는 이 목록에서 유형을 선택하고, 공개 예약 페이지는 유형에 맞는
  * 아이콘을 표시한다. (기존엔 유형 문자열에 "연습" 포함 여부만으로 아이콘 2종을
  * 구분했으나, 유형을 정형화하여 다양한 픽토그램을 안정적으로 매핑.)
+ *
+ * 유형별로 어떤 장비를 신청받을지는 기관 설정(신청서 설정 > 필요 물품 목록의
+ * facility_types)에서 정하므로 여기서 다루지 않는다.
  */
 export interface FacilityTypeDef {
-  value: string;      // 저장·표시되는 유형명
-  equipment: boolean; // 장비(앰프/스피커/마이크/키보드) 선택 UI 노출 여부
-  icon: ReactNode;    // <svg> 내부 요소
+  value: string;   // 저장·표시되는 유형명
+  icon: ReactNode; // <svg> 내부 요소
 }
 
 const ICON: Record<string, ReactNode> = {
@@ -68,13 +70,13 @@ const DEFAULT_ICON: ReactNode = (
 );
 
 export const FACILITY_TYPES: FacilityTypeDef[] = [
-  { value: "연습실", equipment: true, icon: ICON["연습실"] },
-  { value: "활동실", equipment: false, icon: ICON["활동실"] },
-  { value: "회의실", equipment: false, icon: ICON["회의실"] },
-  { value: "강의실", equipment: false, icon: ICON["강의실"] },
-  { value: "체육관", equipment: false, icon: ICON["체육관"] },
-  { value: "공연장", equipment: true, icon: ICON["공연장"] },
-  { value: "스튜디오", equipment: true, icon: ICON["스튜디오"] },
+  { value: "연습실", icon: ICON["연습실"] },
+  { value: "활동실", icon: ICON["활동실"] },
+  { value: "회의실", icon: ICON["회의실"] },
+  { value: "강의실", icon: ICON["강의실"] },
+  { value: "체육관", icon: ICON["체육관"] },
+  { value: "공연장", icon: ICON["공연장"] },
+  { value: "스튜디오", icon: ICON["스튜디오"] },
 ];
 
 /** 유형 문자열 → 정의. 목록에 없으면(레거시/커스텀) 기본값으로 폴백. */
@@ -84,7 +86,7 @@ export function facilityTypeMeta(type: string | null | undefined): FacilityTypeD
   if (found) return found;
   // 레거시 호환: "연습" 이 들어가면 연습실로 취급
   if (t.includes("연습")) return FACILITY_TYPES[0];
-  return { value: t || "기타", equipment: false, icon: DEFAULT_ICON };
+  return { value: t || "기타", icon: DEFAULT_ICON };
 }
 
 /** 유형에 맞는 픽토그램 SVG. */

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useOrg } from "../../hooks/useOrg";
 import type { Reservation } from "../../api/types";
 import { dateOf, formatTime } from "../../lib/datetime";
+import { attendanceLabel } from "../../components/AttendanceControls";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   confirmed: { label: "확정", cls: "confirmed" },
@@ -36,8 +37,10 @@ export default function ListPage() {
               <th>상태</th>
               <th>시설명</th>
               <th>이용 일시</th>
+              <th>활동내용</th>
               <th>신청인</th>
               <th>연락처</th>
+              <th>이용 결과</th>
               <th>관리</th>
             </tr>
           </thead>
@@ -54,8 +57,14 @@ export default function ListPage() {
                   <td>
                     {dateOf(r.start_time)} {formatTime(r.start_time)}~{formatTime(r.end_time)}
                   </td>
+                  <td>{r.activity || "-"}</td>
                   <td>{r.applicant_name}</td>
                   <td>{r.applicant_contact}</td>
+                  <td>
+                    <span className={`attendance-pill ${r.attendance || "none"}`}>
+                      {attendanceLabel(r.attendance)}
+                    </span>
+                  </td>
                   <td>
                     <Link to={`${base}/manage/edit/${r.id}`} style={{ color: "var(--primary-color)" }}>
                       수정

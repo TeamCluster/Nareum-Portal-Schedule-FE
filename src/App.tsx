@@ -20,6 +20,7 @@ import EditPage from "./pages/admin/EditPage";
 import FacilitiesPage from "./pages/admin/FacilitiesPage";
 import OperatingPage from "./pages/admin/OperatingPage";
 import SettingsPage from "./pages/admin/SettingsPage";
+import FormSettingsPage from "./pages/admin/FormSettingsPage";
 
 import SuperLoginPage from "./pages/super/LoginPage";
 import SuperPlacesPage from "./pages/super/PlacesPage";
@@ -42,7 +43,7 @@ import SuperHolidaysPage from "./pages/super/HolidaysPage";
  *   /:slug/check              내 예약 확인
  *   /:slug/manage/login       기관 관리자 로그인
  *   /:slug/manage             대시보드
- *   /:slug/manage/requests|list|add|facilities|edit/:resId
+ *   /:slug/manage/requests|list|add|facilities|operating|settings|form-settings|edit/:resId
  */
 export default function App() {
   return (
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="facilities" element={<FacilitiesPage />} />
         <Route path="operating" element={<OperatingPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="form-settings" element={<FormSettingsPage />} />
         <Route path="edit/:resId" element={<EditPage />} />
       </Route>
 

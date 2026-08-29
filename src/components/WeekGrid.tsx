@@ -1,4 +1,5 @@
 import type { DaySegment, WeekGrid as WeekGridData } from "../api/types";
+import { recurringKindLabel } from "../lib/recurringKinds";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -89,7 +90,7 @@ export default function WeekGrid({
                     if (seg.type === "block") {
                       return (
                         <td key={`${di}-${f.id}`} rowSpan={span} className="wg-cell block"
-                            title={`${f.name} · ${seg.title} · ${seg.from_hour}:00~${seg.to_hour}:00 · 정기활동`}>
+                            title={`${f.name} · ${seg.title} · ${seg.from_hour}:00~${seg.to_hour}:00 · 정기활동(${recurringKindLabel(seg.kind)})`}>
                           <span className="wg-txt">{seg.title || "정기"}</span>
                         </td>
                       );

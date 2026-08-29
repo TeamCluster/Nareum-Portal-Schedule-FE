@@ -2,18 +2,21 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
-import type { DayConfig, Facility } from "../../api/types";
+import type { DayConfig, EquipmentGroup, Facility } from "../../api/types";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
-import ReservationFields, { ApplicantState } from "../../components/ReservationFields";
+import ReservationFields, {
+  ApplicantState,
+  EMPTY_APPLICANT,
+} from "../../components/ReservationFields";
+import { formatPhoneNumber } from "../../lib/phone";
+import { useFormConfig } from "../../hooks/useFormConfig";
+import ClubPicker from "../../components/ClubPicker";
+import type { Club } from "../../api/types";
 
-const EMPTY: ApplicantState = {
-  name: "",
-  contact: "",
-  school: "",
-  club: "",
-  participants: {},
-  equipment: [],
-};
+/** 추가 방식 — 신청서 전체 입력 vs 동아리 단기대관(간편). */
+type Mode = "full" | "club";
+
+const DEFAULT_CLUB_ACTIVITY = "동아리 단기대관";
 
 export default function AddPage() {
   const { base, api } = useOrg();
@@ -25,7 +28,13 @@ export default function AddPage() {
   const [blockedHours, setBlockedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
   const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
-  const [fields, setFields] = useState<ApplicantState>(EMPTY);
+  const [fields, setFields] = useState<ApplicantState>(EMPTY_APPLICANT);
+  const formCfg = useFormConfig();
+
+  const [mode, setMode] = useState<Mode>("full");
+  const [club, setClub] = useState("");
+  const [clubActivity, setClubActivity] = useState(DEFAULT_CLUB_ACTIVITY);
+  const [clubContact, setClubContact] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,13 +73,27 @@ export default function AddPage() {
     if (slotsDisabled) return setError("시설과 날짜를 먼저 선택해주세요.");
     if (hours.length === 0) return setError("이용 시간을 하나 이상 선택해주세요.");
 
+    if (mode === "club" && !club.trim()) return setError("동아리를 선택하거나 직접 입력해주세요.");
+
+    // 동아리 단기대관은 신청인 정보를 받지 않는다 — 동아리명이 곧 표시명.
+    // (인원·물품 등 세부 정보가 필요하면 나중에 '예약 수정'에서 채운다.)
+    const applicant =
+      mode === "club"
+        ? {
+            name: club.trim(),
+            club: club.trim(),
+            contact: clubContact,
+            activity: clubActivity.trim() || DEFAULT_CLUB_ACTIVITY,
+          }
+        : fields;
+
     setSubmitting(true);
     try {
       const res = await api.post<{ warnings?: string[] }>("/admin/reservations", {
         facility_id: Number(facilityId),
         date,
         hours,
-        ...fields,
+        ...applicant,
       });
       if (res.warnings?.length) {
         alert("아래 경고가 있으나 예약이 추가되었습니다:\n\n- " + res.warnings.join("\n- "));
@@ -85,6 +108,29 @@ export default function AddPage() {
   return (
     <form onSubmit={onSubmit}>
       <h2 className="page-title">예약 직접 추가</h2>
+
+      <div className="mode-tabs">
+        <button
+          type="button"
+          className={mode === "full" ? "active" : ""}
+          onClick={() => setMode("full")}
+        >
+          신청서 전체 입력
+        </button>
+        <button
+          type="button"
+          className={mode === "club" ? "active" : ""}
+          onClick={() => setMode("club")}
+        >
+          동아리 단기대관
+        </button>
+      </div>
+      <p className="timeline-note" style={{ marginTop: 0 }}>
+        {mode === "full"
+          ? "종이 신청서와 같은 항목을 모두 입력합니다."
+          : "정기활동 외에 동아리가 추가로 쓰는 일정을 동아리명만으로 빠르게 확정합니다. 매주 반복되는 정기활동은 '운영 설정 › 정기 고정활동'에 등록하세요."}
+      </p>
+
       {error && (
         <ul className="flash-messages">
           <li>{error}</li>
@@ -133,7 +179,45 @@ export default function AddPage() {
           )}
         </div>
 
-        <ReservationFields value={fields} onChange={setFields} />
+        {mode === "full" ? (
+          <ReservationFields
+            value={fields}
+            onChange={setFields}
+            catalog={formCfg.equipment_catalog as EquipmentGroup[]}
+          />
+        ) : (
+          <div className="form-section" style={{ marginBottom: 0 }}>
+            <h4>동아리 단기대관</h4>
+            <ClubPicker
+              value={club}
+              onChange={setClub}
+              onPick={(c: Club | null) =>
+                setClubActivity(c?.category ? `${DEFAULT_CLUB_ACTIVITY} (${c.category})` : DEFAULT_CLUB_ACTIVITY)
+              }
+            />
+            <div className="field-row">
+              <div className="field">
+                <label>활동내용</label>
+                <input
+                  type="text"
+                  value={clubActivity}
+                  maxLength={200}
+                  onChange={(e) => setClubActivity(e.target.value)}
+                  placeholder={DEFAULT_CLUB_ACTIVITY}
+                />
+              </div>
+              <div className="field">
+                <label>담당자 연락처 (선택)</label>
+                <input
+                  type="text"
+                  maxLength={13}
+                  value={clubContact}
+                  onChange={(e) => setClubContact(formatPhoneNumber(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="form-actions">
@@ -141,7 +225,11 @@ export default function AddPage() {
           취소
         </button>
         <button type="submit" className="btn btn-primary" disabled={submitting} style={{ flex: 1 }}>
-          {submitting ? "저장 중..." : "즉시 예약 확정하기"}
+          {submitting
+            ? "저장 중..."
+            : mode === "club"
+              ? "동아리 단기대관 확정하기"
+              : "즉시 예약 확정하기"}
         </button>
       </div>
     </form>

@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useOrg } from "../hooks/useOrg";
 import type { Reservation } from "../api/types";
 import { formatKoreanDate, formatTime } from "../lib/datetime";
+import { equipmentSummary, participantSummary } from "../lib/reservationForm";
 
 export default function CompletePage() {
   const { base, api } = useOrg();
@@ -46,6 +47,22 @@ export default function CompletePage() {
             {formatTime(res.start_time)} ~ {formatTime(res.end_time)}
           </strong>
         </div>
+        {res.activity && (
+          <div className="row">
+            <span>활동내용</span>
+            <strong>{res.activity}</strong>
+          </div>
+        )}
+        <div className="row">
+          <span>이용 인원</span>
+          <strong>{participantSummary(res.participant_info) || "-"}</strong>
+        </div>
+        {res.requested_equipment.length > 0 && (
+          <div className="row">
+            <span>필요 물품</span>
+            <strong>{equipmentSummary(res.requested_equipment)}</strong>
+          </div>
+        )}
       </div>
 
       <div className="notice">

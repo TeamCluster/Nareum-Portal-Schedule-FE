@@ -3,8 +3,30 @@ import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
 import Collapsible from "../../components/Collapsible";
 import type {
-  CommonHoliday, Facility, HolidayType, OperatingHour, OrgHolidaysView, RecurringBlock,
+  BookingRules, CommonHoliday, Facility, HolidayType, OperatingHour, OrgHolidaysView,
+  RecurringBlock, RecurringKind,
 } from "../../api/types";
+import ClubPicker from "../../components/ClubPicker";
+import { RECURRING_KINDS } from "../../lib/recurringKinds";
+
+const EMPTY_BLOCK = {
+  facility_id: "", weekday: "0", start_hour: "10", end_hour: "12",
+  title: "", kind: "club" as RecurringKind,
+};
+
+/** 대관 규칙 입력 항목 — 종이 규정의 숫자값을 기관별로 조정한다. */
+const RULE_FIELDS: { key: keyof BookingRules; label: string; unit: string; hint: string }[] = [
+  { key: "booking_min_days", label: "최소 신청 기한", unit: "일 전",
+    hint: "당일·임박 신청을 막는다. 예) 3 → 이용 3일 전까지 신청" },
+  { key: "booking_max_days", label: "예약 가능 범위", unit: "일 뒤까지",
+    hint: "예약일 기준 얼마나 앞까지 열어둘지. 예) 14 → 2주" },
+  { key: "cancel_deadline_days", label: "취소 마감", unit: "일 전",
+    hint: "신청자가 직접 취소할 수 있는 기한. 이후에는 담당자만 처리 가능. 0 이면 당일까지 허용" },
+  { key: "penalty_months", label: "재대관 제한 기간", unit: "개월",
+    hint: "노쇼·이용확인 미실시로 기록된 신청인의 재대관을 막는 기간. 0 이면 제한 없음" },
+  { key: "extension_hours", label: "현장 연장 가능 시간", unit: "시간",
+    hint: "뒤이은 대관예약이 없을 때 현장에서 늘려줄 수 있는 시간. 0 이면 연장 미운영" },
+];
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 const HOUR_OPTIONS = Array.from({ length: 24 - 6 + 1 }, (_, i) => 6 + i); // 6..24
@@ -31,6 +53,10 @@ export default function OperatingPage() {
   const [hoursMsg, setHoursMsg] = useState("");
   const [hoursErr, setHoursErr] = useState("");
 
+  const [rules, setRules] = useState<BookingRules | null>(null);
+  const [rulesMsg, setRulesMsg] = useState("");
+  const [rulesErr, setRulesErr] = useState("");
+
   const [hol, setHol] = useState<OrgHolidaysView | null>(null);
   const [closureForm, setClosureForm] = useState<{ date: string; name: string; type: HolidayType }>({
     date: "", name: "", type: "closure",
@@ -40,7 +66,8 @@ export default function OperatingPage() {
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [blocks, setBlocks] = useState<RecurringBlock[]>([]);
-  const [blk, setBlk] = useState({ facility_id: "", weekday: "0", start_hour: "10", end_hour: "12", title: "" });
+  const [blk, setBlk] = useState(EMPTY_BLOCK);
+  const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
   const [blkErr, setBlkErr] = useState("");
 
   function loadHolidays() {
@@ -48,6 +75,7 @@ export default function OperatingPage() {
   }
   useEffect(() => {
     api.get<{ operating_hours: OperatingHour[] }>("/admin/operating-hours").then((d) => setHours(d.operating_hours));
+    api.get<{ booking_rules: BookingRules }>("/admin/booking-rules").then((d) => setRules(d.booking_rules));
     api.get<{ blocks: RecurringBlock[] }>("/admin/recurring-blocks").then((d) => setBlocks(d.blocks));
     api.get<Facility[]>("/admin/facilities").then(setFacilities);
     loadHolidays();
@@ -55,6 +83,20 @@ export default function OperatingPage() {
 
   function setDay(wd: number, patch: Partial<OperatingHour>) {
     setHours((prev) => prev.map((d) => (d.weekday === wd ? { ...d, ...patch } : d)));
+  }
+
+  async function saveRules() {
+    if (!rules) return;
+    setRulesMsg("");
+    setRulesErr("");
+    try {
+      const d = await api.put<{ booking_rules: BookingRules; message: string }>(
+        "/admin/booking-rules", rules);
+      setRules(d.booking_rules);
+      setRulesMsg(d.message);
+    } catch (err) {
+      setRulesErr(err instanceof ApiError ? err.message : "저장에 실패했습니다.");
+    }
   }
 
   async function saveHours() {
@@ -112,31 +154,108 @@ export default function OperatingPage() {
   const shownCommon = yearSel === "all" ? commonByYear : commonByYear.filter(([y]) => y === yearSel);
   const shownPlace = yearSel === "all" ? placeByYear : placeByYear.filter(([y]) => y === yearSel);
 
-  async function addBlock() {
+  function reloadBlocks() {
+    api.get<{ blocks: RecurringBlock[] }>("/admin/recurring-blocks").then((d) => setBlocks(d.blocks));
+  }
+
+  function cancelBlockEdit() {
+    setEditingBlockId(null);
+    setBlk(EMPTY_BLOCK);
+    setBlkErr("");
+  }
+
+  function startBlockEdit(b: RecurringBlock) {
+    setEditingBlockId(b.id);
+    setBlkErr("");
+    setBlk({
+      facility_id: String(b.facility_id),
+      weekday: String(b.weekday),
+      start_hour: String(b.start_hour),
+      end_hour: String(b.end_hour),
+      title: b.title,
+      kind: b.kind,
+    });
+  }
+
+  async function submitBlock() {
     setBlkErr("");
     if (!blk.facility_id) return setBlkErr("시설을 선택해주세요.");
+    if (!blk.title.trim()) return setBlkErr(`${kindDef.nameLabel}을(를) 입력해주세요.`);
+    const body = {
+      facility_id: Number(blk.facility_id),
+      weekday: Number(blk.weekday),
+      start_hour: Number(blk.start_hour),
+      end_hour: Number(blk.end_hour),
+      title: blk.title,
+      kind: blk.kind,
+    };
     try {
-      await api.post("/admin/recurring-blocks", {
-        facility_id: Number(blk.facility_id),
-        weekday: Number(blk.weekday),
-        start_hour: Number(blk.start_hour),
-        end_hour: Number(blk.end_hour),
-        title: blk.title,
-      });
-      setBlk({ ...blk, title: "" });
-      api.get<{ blocks: RecurringBlock[] }>("/admin/recurring-blocks").then((d) => setBlocks(d.blocks));
+      if (editingBlockId === null) await api.post("/admin/recurring-blocks", body);
+      else await api.put(`/admin/recurring-blocks/${editingBlockId}`, body);
+      cancelBlockEdit();
+      reloadBlocks();
     } catch (err) {
-      setBlkErr(err instanceof ApiError ? err.message : "정기활동 추가에 실패했습니다.");
+      setBlkErr(err instanceof ApiError ? err.message : "정기활동 저장에 실패했습니다.");
     }
   }
+
   async function delBlock(id: number) {
+    if (!window.confirm("이 정기활동을 삭제할까요?")) return;
     await api.del(`/admin/recurring-blocks/${id}`);
+    if (editingBlockId === id) cancelBlockEdit();
     setBlocks((prev) => prev.filter((b) => b.id !== id));
   }
+
+  const kindDef = RECURRING_KINDS.find((k) => k.value === blk.kind) ?? RECURRING_KINDS[2];
 
   return (
     <>
       <h2 className="page-title">운영 설정</h2>
+
+      {/* 대관 규칙 (숫자값) */}
+      <div className="form-card">
+        <div className="form-section" style={{ marginBottom: 0 }}>
+          <h4>대관 규칙</h4>
+          <p className="timeline-note">
+            신청 화면의 안내 문구는 <strong>신청서 설정</strong>에서 따로 수정합니다. 여기 값이
+            실제로 신청·취소·제재를 판정하므로, 안내 문구와 어긋나지 않게 맞춰주세요.
+          </p>
+          {rulesErr && <ul className="flash-messages"><li>{rulesErr}</li></ul>}
+          {rulesMsg && (
+            <ul className="flash-messages">
+              <li style={{ background: "#dcfce7", color: "#166534", borderColor: "#86efac" }}>{rulesMsg}</li>
+            </ul>
+          )}
+          {rules && (
+            <>
+              <table className="admin-table" style={{ marginBottom: 16 }}>
+                <thead><tr><th>항목</th><th>값</th><th>설명</th></tr></thead>
+                <tbody>
+                  {RULE_FIELDS.map((f) => (
+                    <tr key={f.key}>
+                      <td style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{f.label}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <input
+                          type="number"
+                          min={0}
+                          style={{ width: 72, textAlign: "center" }}
+                          value={rules[f.key]}
+                          onChange={(e) =>
+                            setRules({ ...rules, [f.key]: Number(e.target.value) || 0 })
+                          }
+                        />{" "}
+                        {f.unit}
+                      </td>
+                      <td style={{ color: "var(--text-sub)", fontSize: "0.85rem" }}>{f.hint}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button className="btn btn-primary" onClick={saveRules}>대관 규칙 저장</button>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* 요일별 운영시간 */}
       <div className="form-card">
@@ -294,7 +413,20 @@ export default function OperatingPage() {
       <div className="form-card">
         <div className="form-section" style={{ marginBottom: 0 }}>
           <h4>정기 고정활동 (매주 반복 — 대관 겹침 방지)</h4>
+          <p className="timeline-note" style={{ marginTop: -6 }}>
+            동아리 정기활동, 센터 프로그램, 시설 점검이나 외부 정기대관처럼{" "}
+            <strong>매주 같은 시간에 고정으로 잡히는 일정</strong>을 등록합니다. 등록한
+            시간대는 공개 대관 신청에서 선택할 수 없습니다. 한 번뿐인 동아리 대관은
+            대신 “예약 직접 추가”의 동아리 단기대관을 쓰세요.
+          </p>
           {blkErr && <ul className="flash-messages"><li>{blkErr}</li></ul>}
+          {editingBlockId !== null && (
+            <ul className="flash-messages">
+              <li style={{ background: "#eff6ff", color: "#1e40af", borderColor: "#bfdbfe" }}>
+                등록된 정기활동을 수정하고 있습니다.
+              </li>
+            </ul>
+          )}
           <div className="field-row">
             <div className="field">
               <label>시설</label>
@@ -325,25 +457,69 @@ export default function OperatingPage() {
             </div>
           </div>
           <div className="field">
-            <label>활동명(선택)</label>
-            <input value={blk.title} placeholder="예: 방송댄스 정기수업"
-                   onChange={(e) => setBlk({ ...blk, title: e.target.value })} />
+            <label>활동 유형</label>
+            <div className="equipment-grid">
+              {RECURRING_KINDS.map((k) => (
+                <label key={k.value} className={`checkbox-chip${blk.kind === k.value ? " checked" : ""}`}>
+                  <input
+                    type="radio"
+                    name="block-kind"
+                    checked={blk.kind === k.value}
+                    /* 유형을 바꾸면 앞 유형에서 넣은 이름은 의미가 없으므로 비운다. */
+                    onChange={() => setBlk({ ...blk, kind: k.value, title: "" })}
+                  />
+                  {k.label}
+                </label>
+              ))}
+            </div>
+            <p className="timeline-note">{kindDef.hint}</p>
           </div>
-          <button className="btn btn-primary" onClick={addBlock} style={{ marginBottom: 16 }}>정기활동 추가</button>
+
+          {blk.kind === "club" ? (
+            <ClubPicker value={blk.title} onChange={(name) => setBlk({ ...blk, title: name })} />
+          ) : (
+            <div className="field">
+              <label>
+                {kindDef.nameLabel}
+                <span className="required">*</span>
+              </label>
+              <input value={blk.title} placeholder={kindDef.placeholder} maxLength={100}
+                     onChange={(e) => setBlk({ ...blk, title: e.target.value })} />
+            </div>
+          )}
+
+          <div className="inline-actions" style={{ marginBottom: 16 }}>
+            <button className="btn btn-primary" onClick={submitBlock}>
+              {editingBlockId === null ? "정기활동 추가" : "수정 저장"}
+            </button>
+            {editingBlockId !== null && (
+              <button className="btn btn-check" onClick={cancelBlockEdit}>수정 취소</button>
+            )}
+          </div>
 
           {blocks.length === 0 ? (
             <p style={{ color: "var(--text-sub)" }}>등록된 정기활동이 없습니다.</p>
           ) : (
             <table className="admin-table">
-              <thead><tr><th>요일</th><th>시설</th><th>시간</th><th>활동명</th><th>관리</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>요일</th><th>시설</th><th>시간</th><th>유형</th><th>활동명</th><th>관리</th>
+                </tr>
+              </thead>
               <tbody>
                 {blocks.map((b) => (
-                  <tr key={b.id}>
+                  <tr key={b.id} className={editingBlockId === b.id ? "row-editing" : ""}>
                     <td style={{ fontWeight: 700 }}>{WEEKDAYS[b.weekday]}</td>
                     <td>{b.facility_name || "-"}</td>
-                    <td>{hh(b.start_hour)}~{hh(b.end_hour)}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{hh(b.start_hour)}~{hh(b.end_hour)}</td>
+                    <td><span className={`kind-pill ${b.kind}`}>{b.kind_label}</span></td>
                     <td>{b.title || "-"}</td>
-                    <td><button className="btn btn-danger" onClick={() => delBlock(b.id)}>삭제</button></td>
+                    <td>
+                      <div className="inline-actions">
+                        <button className="btn btn-check" onClick={() => startBlockEdit(b)}>수정</button>
+                        <button className="btn btn-danger" onClick={() => delBlock(b.id)}>삭제</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

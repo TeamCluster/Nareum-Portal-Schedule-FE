@@ -4,6 +4,7 @@ import { useOrg } from "../hooks/useOrg";
 import type { Reservation } from "../api/types";
 import { formatPhoneNumber } from "../lib/phone";
 import { dateOf, formatTime } from "../lib/datetime";
+import { equipmentSummary } from "../lib/reservationForm";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "승인 대기 중",
@@ -86,7 +87,7 @@ export default function CheckPage() {
             <p style={{ color: "var(--text-sub)" }}>총 {reservations.length}건의 예약 내역</p>
             <div className="res-grid">
               {reservations.map((res) => {
-                const cancellable = !res.is_deleted && ["pending", "confirmed"].includes(res.status);
+                const active = !res.is_deleted && ["pending", "confirmed"].includes(res.status);
                 return (
                   <div className="res-ticket" key={res.id}>
                     <div className="res-header">
@@ -101,12 +102,22 @@ export default function CheckPage() {
                         ⏰ {formatTime(res.start_time)} ~ {formatTime(res.end_time)}
                       </div>
                       <div>🏷️ {res.facility?.type}</div>
+                      {res.activity && <div>📝 {res.activity}</div>}
+                      {res.requested_equipment.length > 0 && (
+                        <div>🎛️ {equipmentSummary(res.requested_equipment)}</div>
+                      )}
                     </div>
-                    {cancellable && (
-                      <button className="btn btn-danger" onClick={() => cancel(res)}>
-                        예약 취소하기
-                      </button>
-                    )}
+                    {active &&
+                      (res.can_cancel ? (
+                        <button className="btn btn-danger" onClick={() => cancel(res)}>
+                          예약 취소하기
+                        </button>
+                      ) : (
+                        <p className="cancel-closed">
+                          취소 가능 기한({res.cancel_deadline})이 지났습니다. 담당자에게
+                          문의해주세요.
+                        </p>
+                      ))}
                   </div>
                 );
               })}

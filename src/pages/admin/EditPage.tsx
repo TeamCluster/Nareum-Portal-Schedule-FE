@@ -2,10 +2,22 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useOrg } from "../../hooks/useOrg";
-import type { DayConfig, Facility, Reservation, ReservationStatus } from "../../api/types";
+import type {
+  DayConfig,
+  EquipmentGroup,
+  Facility,
+  Reservation,
+  ReservationStatus,
+} from "../../api/types";
 import { dateOf, hourOf } from "../../lib/datetime";
+import { normalizeParticipants } from "../../lib/reservationForm";
 import TimeSlotPicker from "../../components/TimeSlotPicker";
-import ReservationFields, { ApplicantState } from "../../components/ReservationFields";
+import ReservationFields, {
+  ApplicantState,
+  EMPTY_APPLICANT,
+} from "../../components/ReservationFields";
+import { useFormConfig } from "../../hooks/useFormConfig";
+import AttendanceControls, { attendanceLabel } from "../../components/AttendanceControls";
 
 const STATUS_OPTIONS: { value: ReservationStatus; label: string }[] = [
   { value: "pending", label: "승인 대기" },
@@ -27,14 +39,9 @@ export default function EditPage() {
   const [blockedHours, setBlockedHours] = useState<number[]>([]);
   const [hours, setHours] = useState<number[]>([]);
   const [dayCfg, setDayCfg] = useState<DayConfig | null>(null);
-  const [fields, setFields] = useState<ApplicantState>({
-    name: "",
-    contact: "",
-    school: "",
-    club: "",
-    participants: {},
-    equipment: [],
-  });
+  const [fields, setFields] = useState<ApplicantState>(EMPTY_APPLICANT);
+  const formCfg = useFormConfig();
+  const [reservation, setReservation] = useState<Reservation | null>(null);
   const [status, setStatus] = useState<ReservationStatus>("pending");
   const [rejectReason, setRejectReason] = useState("");
   const [message, setMessage] = useState("");
@@ -44,6 +51,7 @@ export default function EditPage() {
   useEffect(() => {
     api.get<Facility[]>("/facilities").then(setFacilities);
     api.get<Reservation>(`/admin/reservations/${resId}`).then((r) => {
+      setReservation(r);
       setFacilityId(String(r.facility_id));
       setDate(dateOf(r.start_time));
       const hrs: number[] = [];
@@ -51,10 +59,13 @@ export default function EditPage() {
       setHours(hrs);
       setFields({
         name: r.applicant_name,
+        age: r.applicant_age == null ? "" : String(r.applicant_age),
         contact: r.applicant_contact,
+        address: r.applicant_address || "",
         school: r.applicant_school || "",
         club: r.applicant_club || "",
-        participants: (r.participant_info || {}) as Record<string, number>,
+        activity: r.activity || "",
+        participants: normalizeParticipants(r.participant_info),
         equipment: r.requested_equipment || [],
       });
       setStatus(r.status);
@@ -159,7 +170,11 @@ export default function EditPage() {
           )}
         </div>
 
-        <ReservationFields value={fields} onChange={setFields} />
+        <ReservationFields
+          value={fields}
+          onChange={setFields}
+          catalog={formCfg.equipment_catalog as EquipmentGroup[]}
+        />
 
         <div className="form-section" style={{ marginBottom: 0 }}>
           <h4>관리자 상태 제어</h4>
@@ -181,6 +196,31 @@ export default function EditPage() {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="거절 사유를 입력하세요"
+              />
+            </div>
+          )}
+
+          {reservation && (
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>
+                이용 결과 — 현재 <strong>{attendanceLabel(reservation.attendance)}</strong>
+              </label>
+              <p className="timeline-note">
+                '노쇼' 또는 '확인 미실시'로 기록하면 같은 신청인(이름+연락처)의 재대관이 규정
+                기간 동안 제한됩니다. '현장 연장'은 뒤이은 대관예약이 없을 때만 적용됩니다.
+                (아래 버튼은 즉시 저장됩니다.)
+              </p>
+              <AttendanceControls
+                reservation={reservation}
+                onDone={(msg) => {
+                  setMessage(msg);
+                  api.get<Reservation>(`/admin/reservations/${resId}`).then((r) => {
+                    setReservation(r);
+                    const hrs: number[] = [];
+                    for (let h = hourOf(r.start_time); h < hourOf(r.end_time); h++) hrs.push(h);
+                    setHours(hrs);
+                  });
+                }}
               />
             </div>
           )}
