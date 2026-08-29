@@ -220,124 +220,12 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
 }
 
-.search-box {
-    background: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
-    color: white;
-    text-align: center;
-    padding: 40px 20px;
-    border-radius: 16px;
-    margin: 10px 0 30px;
-    box-shadow: var(--shadow);
-}
-
-.search-box h3 {
-    color: white;
-    font-size: 1.6rem;
-    margin: 0;
-    font-weight: 800;
-}
-
-.search-box p {
-    color: rgba(255, 255, 255, 0.85);
-    margin: 1rem 0 1.5rem;
-    font-size: 1rem;
-}
-
-.search-box input[type="date"] {
-    width: 200px;
-    padding: 12px;
-    border-radius: 8px;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-main);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.facility-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
-}
-
-.facility-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.facility-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-lg);
-}
-
-.card-image {
-    width: 100%;
-    height: 180px;
-    background-color: #f1f5f9;
-    position: relative;
-}
-
-.card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.facility-type-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: white;
-    color: var(--primary-color);
-    padding: 4px 12px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.card-body {
-    padding: 20px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.card-title-area {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-}
-
-.card-title-area h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-}
+/* 공개 홈(/:slug)의 시설 카드·시간대 바·날짜 선택 UI 는 home.css 로 이관. */
 
 .type-icon {
     width: 18px;
     height: 18px;
     color: var(--primary-color);
-}
-
-.description {
-    color: var(--text-sub);
-    font-size: 0.85rem;
-    margin: 8px 0 16px;
-    line-height: 1.5;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
 }
 
 /* Timeline UI Styles */
@@ -426,35 +314,6 @@ textarea:focus {
     /* 주황색 (선택됨) */
     color: white;
     border-color: var(--warning);
-}
-
-.status-bar {
-    display: flex;
-    height: 24px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #e2e8f0;
-    margin-bottom: 15px;
-}
-
-.status-slot {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
-    border-right: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.status-slot.available {
-    background-color: var(--success);
-}
-
-.status-slot.booked {
-    background-color: #cbd5e0;
-    color: #718096;
 }
 
 .btn-full {
@@ -566,8 +425,14 @@ textarea:focus {
         padding-bottom: 10px;
     }
 
+    /* 시간 칸 수(--slots, TimeSlotPicker 가 주입)에 맞춰 최소 폭을 잡는다.
+       칸이 적은 날은 가로 스크롤 없이 한 화면에 들어온다. */
     .timeline-scale,
     .timeline-bar {
-        min-width: 450px;
+        min-width: calc(var(--slots, 12) * 36px);
+    }
+
+    .time-slot-block .status-label {
+        font-size: 0.6rem;
     }
 }

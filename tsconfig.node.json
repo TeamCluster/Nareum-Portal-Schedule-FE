@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "composite": true,
+    // vite.config.js/.d.ts 를 프로젝트 루트에 뱉지 않게 한다. 루트에 남으면
+    // Vite 가 vite.config.ts 보다 vite.config.js 를 먼저 읽어 낡은 설정(프록시
+    // 포트 등)으로 뜬다.
+    "outDir": "./node_modules/.tmp",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",

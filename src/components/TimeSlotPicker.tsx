@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 // Timeline slot picker shared by the public reserve form and admin add/edit.
 // Public mode: toggle up to `maxHours` contiguous slots.
 // Admin mode (autoFillRange): clicking fills the contiguous range to the click.
@@ -81,7 +83,9 @@ export default function TimeSlotPicker({
   }
 
   return (
-    <div className="timeline-container">
+    // --slots: 좁은 화면에서 타임라인의 최소 폭을 시간 칸 수에 맞춰 잡기 위한 값
+    //          (고정값이면 9시간짜리 하루도 불필요하게 가로 스크롤이 생긴다).
+    <div className="timeline-container" style={{ "--slots": HOURS.length } as CSSProperties}>
       <div className="timeline-scale">
         {Array.from({ length: CLOSE_HOUR - OPEN_HOUR + 1 }, (_, i) => OPEN_HOUR + i).map((h) => (
           <span key={h} className="timeline-label">

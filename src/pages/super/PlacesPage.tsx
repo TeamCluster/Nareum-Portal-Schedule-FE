@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiError, assetUrl } from "../../api/client";
+import { ApiError, assetUrl, validateImageFile } from "../../api/client";
 import { superApi, PlaceInput } from "../../api/super";
 import type { Place } from "../../api/types";
 
@@ -50,6 +50,8 @@ export default function SuperPlacesPage() {
 
   async function uploadHeader(slug: string, file: File) {
     setOk(""); setError("");
+    const invalid = validateImageFile(file);
+    if (invalid) { setError(invalid); return; }
     try {
       const fd = new FormData();
       fd.append("image", file);
