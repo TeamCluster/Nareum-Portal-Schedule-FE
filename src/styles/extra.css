@@ -649,6 +649,81 @@ button.linklike:disabled {
   color: #1e40af;
 }
 
+/* --- 정기 고정활동 적용 기간 상태 배지 ----------------------------------
+   예약 상태의 .status-pill 과 이름이 겹치면 그쪽 기본값(padding/font-size)까지
+   덮어써 관리자 화면 전체의 배지가 함께 바뀐다. 별도 클래스로 둔다. */
+.period-pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid #a6ddbc;
+  background: #e3f6ea;
+  color: #1c6b41;
+}
+
+.period-pill.upcoming {
+  border-color: #fcd9b0;
+  background: #fff5e9;
+  color: #9a5b12;
+}
+
+.period-pill.ended {
+  border-color: var(--border-color);
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* --- 동아리 일정 달 복제 -------------------------------------------------- */
+.month-copy {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  margin-top: 18px;
+}
+
+.month-copy-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.month-copy-head span {
+  font-size: 0.82rem;
+  color: var(--text-sub);
+}
+
+.month-copy-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.month-copy-controls input {
+  width: auto;
+  min-width: 150px;
+}
+
+.month-copy-result {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1c6b41;
+}
+
+/* 기간이 끝난 일정 — 목록에 남지만 더 이상 시간을 막지 않는다는 걸 색으로 알린다. */
+.admin-table tr.row-ended > td {
+  color: var(--text-sub);
+  background: #fbfcfd;
+}
+
 .admin-table tr.row-editing > td {
   background: #eff6ff;
 }

@@ -90,6 +90,14 @@ export interface RecurringBlock {
   title: string;
   kind: RecurringKind;
   kind_label: string;
+  /** 적용 기간(양끝 포함). 빈 문자열이면 그쪽 경계가 없다(무기한). */
+  effective_from: string;
+  effective_to: string;
+  /** 기간이 어느 한 달과 정확히 같으면 'YYYY-MM' — 동아리 월 선택 복원용. */
+  month: string;
+  status: "active" | "upcoming" | "ended";
+  /** 화면 표시용 기간 문구 (예: "2026년 9월", "2026-03-02 ~ 2026-06-30"). */
+  period_label: string;
 }
 
 export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "rejected";

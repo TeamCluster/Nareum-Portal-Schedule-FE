@@ -7,11 +7,29 @@ import type {
   RecurringBlock, RecurringKind,
 } from "../../api/types";
 import ClubPicker from "../../components/ClubPicker";
-import { RECURRING_KINDS } from "../../lib/recurringKinds";
+import { BLOCK_STATUS_LABELS, RECURRING_KINDS } from "../../lib/recurringKinds";
+
+/** 오늘 / 이번 달 — 정기활동 적용 기간 입력의 기본값. */
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function thisMonth() {
+  return todayStr().slice(0, 7);
+}
+function nextMonth() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;                       // 0-based → 1-based
+  // Date.setMonth(+1) 은 말일에서 넘쳐(1/31 → 3/3) 달을 건너뛰므로 직접 계산한다.
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
 
 const EMPTY_BLOCK = {
   facility_id: "", weekday: "0", start_hour: "10", end_hour: "12",
   title: "", kind: "club" as RecurringKind,
+  // 적용 기간 — 동아리는 month, 프로그램·기타는 start_date~end_date 를 쓴다.
+  month: thisMonth(), start_date: todayStr(), end_date: "",
 };
 
 /** 대관 규칙 입력 항목 — 종이 규정의 숫자값을 기관별로 조정한다. */
@@ -69,6 +87,10 @@ export default function OperatingPage() {
   const [blk, setBlk] = useState(EMPTY_BLOCK);
   const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
   const [blkErr, setBlkErr] = useState("");
+  // 동아리 일정 달 복제 — 매달 같은 표를 다시 등록하는 부담을 던다.
+  const [copy, setCopy] = useState({ from: thisMonth(), to: nextMonth() });
+  const [copyMsg, setCopyMsg] = useState("");
+  const [copying, setCopying] = useState(false);
 
   function loadHolidays() {
     api.get<OrgHolidaysView>("/admin/holidays").then(setHol);
@@ -174,6 +196,10 @@ export default function OperatingPage() {
       end_hour: String(b.end_hour),
       title: b.title,
       kind: b.kind,
+      // 동아리는 서버가 되돌려준 month 로, 아니면 기간 그대로 복원한다.
+      month: b.month || thisMonth(),
+      start_date: b.effective_from,
+      end_date: b.effective_to,
     });
   }
 
@@ -181,6 +207,16 @@ export default function OperatingPage() {
     setBlkErr("");
     if (!blk.facility_id) return setBlkErr("시설을 선택해주세요.");
     if (!blk.title.trim()) return setBlkErr(`${kindDef.nameLabel}을(를) 입력해주세요.`);
+    // 적용 기간 — 서버도 같은 규칙을 강제하지만, 여기서 걸러야 이유가 바로 보인다.
+    if (kindDef.period === "month" && !blk.month) {
+      return setBlkErr("적용할 달을 선택해주세요.");
+    }
+    if (kindDef.period === "range" && !(blk.start_date && blk.end_date)) {
+      return setBlkErr("프로그램은 시작일과 종료일을 모두 지정해주세요.");
+    }
+    if (blk.start_date && blk.end_date && blk.start_date > blk.end_date) {
+      return setBlkErr("종료일은 시작일과 같거나 뒤여야 합니다.");
+    }
     const body = {
       facility_id: Number(blk.facility_id),
       weekday: Number(blk.weekday),
@@ -188,6 +224,10 @@ export default function OperatingPage() {
       end_hour: Number(blk.end_hour),
       title: blk.title,
       kind: blk.kind,
+      // 서버는 kind 에 맞는 키만 읽는다(club → month, 그 외 → start/end).
+      month: blk.month,
+      start_date: blk.start_date,
+      end_date: blk.end_date,
     };
     try {
       if (editingBlockId === null) await api.post("/admin/recurring-blocks", body);
@@ -199,6 +239,25 @@ export default function OperatingPage() {
     }
   }
 
+  async function copyMonth() {
+    setCopyMsg("");
+    setBlkErr("");
+    if (!copy.from || !copy.to) return setBlkErr("복제할 달과 붙여넣을 달을 모두 선택해주세요.");
+    setCopying(true);
+    try {
+      const r = await api.post<{ message: string }>("/admin/recurring-blocks/copy-month", {
+        from_month: copy.from,
+        to_month: copy.to,
+      });
+      setCopyMsg(r.message);
+      reloadBlocks();
+    } catch (err) {
+      setBlkErr(err instanceof ApiError ? err.message : "복제에 실패했습니다.");
+    } finally {
+      setCopying(false);
+    }
+  }
+
   async function delBlock(id: number) {
     if (!window.confirm("이 정기활동을 삭제할까요?")) return;
     await api.del(`/admin/recurring-blocks/${id}`);
@@ -207,6 +266,13 @@ export default function OperatingPage() {
   }
 
   const kindDef = RECURRING_KINDS.find((k) => k.value === blk.kind) ?? RECURRING_KINDS[2];
+
+  // 적용 기간 내(현재·예정) / 종료 로 가른다.
+  // '예정'을 현재와 같은 묶음에 두는 이유: 기간 판정은 오늘이 아니라 '예약하려는
+  // 날짜' 기준이라, 다음 달 일정은 다음 달 예약을 지금도 이미 막고 있다.
+  // 서버가 상태별로 정렬해 보내므로 그룹 안의 순서(요일·시작시각)는 그대로다.
+  const liveBlocks = blocks.filter((b) => b.status !== "ended");
+  const endedBlocks = blocks.filter((b) => b.status === "ended");
 
   return (
     <>
@@ -415,9 +481,11 @@ export default function OperatingPage() {
           <h4>정기 고정활동 (매주 반복 — 대관 겹침 방지)</h4>
           <p className="timeline-note" style={{ marginTop: -6 }}>
             동아리 정기활동, 센터 프로그램, 시설 점검이나 외부 정기대관처럼{" "}
-            <strong>매주 같은 시간에 고정으로 잡히는 일정</strong>을 등록합니다. 등록한
-            시간대는 공개 대관 신청에서 선택할 수 없습니다. 한 번뿐인 동아리 대관은
-            대신 “예약 직접 추가”의 동아리 단기대관을 쓰세요.
+            <strong>정해진 기간 안에서 매주 같은 시간에 반복되는 일정</strong>을 등록합니다.
+            등록한 시간대는 그 기간 동안 공개 대관 신청에서 선택할 수 없고, 기간이 지나면
+            자동으로 풀립니다. 동아리는 매달 회의 결과에 맞춰 달 단위로, 프로그램은
+            기수의 시작일~종료일로 등록하세요. 한 번뿐인 동아리 대관은 대신
+            “예약 직접 추가”의 동아리 단기대관을 쓰세요.
           </p>
           {blkErr && <ul className="flash-messages"><li>{blkErr}</li></ul>}
           {editingBlockId !== null && (
@@ -465,8 +533,12 @@ export default function OperatingPage() {
                     type="radio"
                     name="block-kind"
                     checked={blk.kind === k.value}
-                    /* 유형을 바꾸면 앞 유형에서 넣은 이름은 의미가 없으므로 비운다. */
-                    onChange={() => setBlk({ ...blk, kind: k.value, title: "" })}
+                    /* 유형을 바꾸면 앞 유형에서 넣은 이름과 기간은 의미가 없다.
+                       (동아리의 '9월'을 프로그램의 시작·종료일로 옮길 수 없다.) */
+                    onChange={() => setBlk({
+                      ...blk, kind: k.value, title: "",
+                      month: thisMonth(), start_date: todayStr(), end_date: "",
+                    })}
                   />
                   {k.label}
                 </label>
@@ -474,6 +546,47 @@ export default function OperatingPage() {
             </div>
             <p className="timeline-note">{kindDef.hint}</p>
           </div>
+
+          {/* 적용 기간 — 동아리는 매달 회의로 정해져 '월' 하나, 프로그램은 기수라
+              시작·종료일, 기타는 비워두면 무기한. */}
+          {kindDef.period === "month" ? (
+            <div className="field">
+              <label>적용 월<span className="required">*</span></label>
+              <input
+                type="month"
+                value={blk.month}
+                onChange={(e) => setBlk({ ...blk, month: e.target.value })}
+              />
+              <p className="timeline-note">{kindDef.periodHint}</p>
+            </div>
+          ) : (
+            <div className="field">
+              <label>
+                적용 기간
+                {kindDef.period === "range" && <span className="required">*</span>}
+              </label>
+              <div className="field-row" style={{ marginBottom: 0 }}>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <input
+                    type="date"
+                    aria-label="시작일"
+                    value={blk.start_date}
+                    onChange={(e) => setBlk({ ...blk, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <input
+                    type="date"
+                    aria-label="종료일"
+                    value={blk.end_date}
+                    min={blk.start_date || undefined}
+                    onChange={(e) => setBlk({ ...blk, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="timeline-note">{kindDef.periodHint}</p>
+            </div>
+          )}
 
           {blk.kind === "club" ? (
             <ClubPicker value={blk.title} onChange={(name) => setBlk({ ...blk, title: name })} />
@@ -500,33 +613,135 @@ export default function OperatingPage() {
           {blocks.length === 0 ? (
             <p style={{ color: "var(--text-sub)" }}>등록된 정기활동이 없습니다.</p>
           ) : (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>요일</th><th>시설</th><th>시간</th><th>유형</th><th>활동명</th><th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blocks.map((b) => (
-                  <tr key={b.id} className={editingBlockId === b.id ? "row-editing" : ""}>
-                    <td style={{ fontWeight: 700 }}>{WEEKDAYS[b.weekday]}</td>
-                    <td>{b.facility_name || "-"}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>{hh(b.start_hour)}~{hh(b.end_hour)}</td>
-                    <td><span className={`kind-pill ${b.kind}`}>{b.kind_label}</span></td>
-                    <td>{b.title || "-"}</td>
-                    <td>
-                      <div className="inline-actions">
-                        <button className="btn btn-check" onClick={() => startBlockEdit(b)}>수정</button>
-                        <button className="btn btn-danger" onClick={() => delBlock(b.id)}>삭제</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              {/* 아직 유효한 일정과 기간이 끝난 일정을 갈라 놓는다. 매달 갱신하는
+                  동아리 일정이 쌓이면 한 표에 섞여 있을 때 "이게 아직 사는 건가"를
+                  행마다 날짜로 따져봐야 한다. */}
+              {/* 동아리 일정은 매달 회의로 다시 정해져 달마다 같은 표를 새로 등록해야
+                  한다. 지난달치를 통째로 옮겨두고 바뀐 것만 고치도록 한다. */}
+              <div className="month-copy">
+                <div className="month-copy-head">
+                  <strong>동아리 일정 달 복제</strong>
+                  <span>한 달치 동아리 정기활동을 다른 달로 그대로 옮깁니다.</span>
+                </div>
+                <div className="month-copy-controls">
+                  <input
+                    type="month"
+                    aria-label="복제할 달"
+                    value={copy.from}
+                    onChange={(e) => setCopy({ ...copy, from: e.target.value })}
+                  />
+                  <span aria-hidden="true">→</span>
+                  <input
+                    type="month"
+                    aria-label="붙여넣을 달"
+                    value={copy.to}
+                    onChange={(e) => setCopy({ ...copy, to: e.target.value })}
+                  />
+                  <button className="btn btn-check" onClick={copyMonth} disabled={copying}>
+                    {copying ? "복제 중…" : "복제"}
+                  </button>
+                </div>
+                <p className="timeline-note" style={{ margin: 0 }}>
+                  동아리 유형만 복제됩니다(프로그램은 기수마다 기간이 달라 대상이 아닙니다).
+                  이미 같은 일정이 있으면 건너뛰므로 여러 번 눌러도 중복되지 않습니다.
+                </p>
+                {copyMsg && <p className="month-copy-result">{copyMsg}</p>}
+              </div>
+
+              <h5 style={{ margin: "18px 0 8px" }}>
+                적용 기간 내 (현재 · 예정){" "}
+                <span style={{ color: "var(--text-sub)", fontWeight: 400, fontSize: "0.85rem" }}>
+                  대관 신청에서 막고 있는 시간
+                </span>
+              </h5>
+              {liveBlocks.length === 0 ? (
+                <p style={{ color: "var(--text-sub)" }}>
+                  적용 기간이 남아 있는 정기활동이 없습니다.
+                </p>
+              ) : (
+                <>
+                  <p className="timeline-note" style={{ marginTop: 0 }}>
+                    “예정”도 이미 적용됩니다 — 기간 판정은 오늘이 아니라 신청하려는
+                    날짜를 기준으로 하므로, 다음 달 일정은 다음 달 예약을 지금도 막습니다.
+                  </p>
+                  <BlockTable
+                    blocks={liveBlocks}
+                    editingBlockId={editingBlockId}
+                    onEdit={startBlockEdit}
+                    onDelete={delBlock}
+                  />
+                </>
+              )}
+
+              {endedBlocks.length > 0 && (
+                <Collapsible title="적용 기간 종료" count={endedBlocks.length}>
+                  <p className="timeline-note" style={{ marginTop: 0 }}>
+                    기간이 끝나 더 이상 대관 신청을 막지 않습니다. 동아리 일정은
+                    수정에서 적용 월만 바꾸면 다시 살릴 수 있습니다.
+                  </p>
+                  <BlockTable
+                    blocks={endedBlocks}
+                    editingBlockId={editingBlockId}
+                    onEdit={startBlockEdit}
+                    onDelete={delBlock}
+                  />
+                </Collapsible>
+              )}
+            </>
           )}
         </div>
       </div>
     </>
+  );
+}
+
+/** 정기활동 목록 표 — 적용 기간 내/외 그룹이 같은 표를 쓴다. */
+function BlockTable({
+  blocks,
+  editingBlockId,
+  onEdit,
+  onDelete,
+}: {
+  blocks: RecurringBlock[];
+  editingBlockId: number | null;
+  onEdit: (b: RecurringBlock) => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <table className="admin-table">
+      <thead>
+        <tr>
+          <th>요일</th><th>시설</th><th>시간</th><th>유형</th><th>활동명</th>
+          <th>적용 기간</th><th>관리</th>
+        </tr>
+      </thead>
+      <tbody>
+        {blocks.map((b) => (
+          <tr
+            key={b.id}
+            className={`${editingBlockId === b.id ? "row-editing" : ""}${
+              b.status === "ended" ? " row-ended" : ""
+            }`}
+          >
+            <td style={{ fontWeight: 700 }}>{WEEKDAYS[b.weekday]}</td>
+            <td>{b.facility_name || "-"}</td>
+            <td style={{ whiteSpace: "nowrap" }}>{hh(b.start_hour)}~{hh(b.end_hour)}</td>
+            <td><span className={`kind-pill ${b.kind}`}>{b.kind_label}</span></td>
+            <td>{b.title || "-"}</td>
+            <td style={{ whiteSpace: "nowrap" }}>
+              <span className={`period-pill ${b.status}`}>{BLOCK_STATUS_LABELS[b.status]}</span>{" "}
+              {b.period_label}
+            </td>
+            <td>
+              <div className="inline-actions">
+                <button className="btn btn-check" onClick={() => onEdit(b)}>수정</button>
+                <button className="btn btn-danger" onClick={() => onDelete(b.id)}>삭제</button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
