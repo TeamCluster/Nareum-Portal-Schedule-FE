@@ -56,7 +56,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    /* 좌우는 .container 와 같은 값을 유지한다 — 여기서 0 으로 덮으면 뷰포트가
+       max-width(1100px)보다 좁을 때 로고와 버튼이 화면 끝에 붙는다. */
+    padding: 12px 20px;
     width: 100%;
     flex-wrap: nowrap;
 }
@@ -422,7 +424,7 @@ textarea:focus {
     }
 
     .header-container {
-        padding: 8px 0;
+        padding: 8px 15px;   /* 좁은 화면의 .container 좌우 패딩과 동일 */
         gap: 8px;
     }
 
