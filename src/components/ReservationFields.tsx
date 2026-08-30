@@ -203,6 +203,8 @@ export default function ReservationFields({
                 {PARTICIPANT_BANDS.map((b) => (
                   <th key={b.key} colSpan={2}>
                     {b.label}
+                    {/* 기관 밖에서는 안 통하는 경계(후기청소년/성인)만 기준을 덧붙인다. */}
+                    {b.hint && <span className="band-hint">{b.hint}</span>}
                   </th>
                 ))}
                 <th>계</th>
@@ -228,8 +230,12 @@ export default function ReservationFields({
                       <input
                         type="number"
                         min={0}
+                        inputMode="numeric"
                         aria-label={`${b.label} ${g.label}`}
-                        value={value.participants[b.key]?.[g.key] ?? 0}
+                        /* 0 은 빈칸으로 보여준다 — 미리 찍혀 있으면 값을 넣을 때마다
+                           먼저 지워야 하는지 헷갈린다(빈칸 = 0명). */
+                        value={value.participants[b.key]?.[g.key] || ""}
+                        placeholder="0"
                         onChange={(e) => setCount(b.key, g.key, e.target.value)}
                       />
                     </td>

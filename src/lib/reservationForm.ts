@@ -8,12 +8,15 @@ import type {
   ParticipantInfo,
 } from "../api/types";
 
-export const PARTICIPANT_BANDS: { key: ParticipantBand; label: string }[] = [
+/** 연령 구분. hint 는 표 머리글에 함께 보여줄 기준 —
+ *  초·중·고는 학교급이라 설명이 필요 없지만, '후기청소년'과 '성인'의 경계는
+ *  기관 밖에서는 통용되지 않아 신청인이 어느 칸에 적을지 헷갈린다. */
+export const PARTICIPANT_BANDS: { key: ParticipantBand; label: string; hint?: string }[] = [
   { key: "elementary", label: "초등" },
   { key: "middle", label: "중등" },
   { key: "high", label: "고등" },
-  { key: "teen", label: "후기청소년" },
-  { key: "adult", label: "성인" },
+  { key: "teen", label: "후기청소년", hint: "만 20~24세" },
+  { key: "adult", label: "성인", hint: "만 25세 이상" },
 ];
 
 /** 입력 가능한 성별. unspecified 는 레거시 표시 전용이라 제외. */
