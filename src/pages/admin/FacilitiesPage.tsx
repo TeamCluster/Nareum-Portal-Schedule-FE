@@ -113,6 +113,17 @@ export default function FacilitiesPage() {
     setEditing((prev) => (prev ? { ...prev, image_url: null } : prev));
   }
 
+  /** 표시 순서를 한 칸 위/아래로. 서버가 옆 시설과 sort_order 를 맞바꾼다. */
+  async function move(f: Facility, direction: "up" | "down") {
+    setError("");
+    try {
+      await api.post(`/admin/facilities/${f.id}/move`, { direction });
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "순서 변경에 실패했습니다.");
+    }
+  }
+
   async function remove(f: Facility) {
     if (!window.confirm(`'${f.name}' 시설을 삭제하시겠습니까?\n해당 시설의 예약 내역·이미지도 함께 삭제됩니다.`)) return;
     try {
@@ -172,9 +183,15 @@ export default function FacilitiesPage() {
       ) : items.length === 0 ? (
         <div className="empty-state">등록된 시설이 없습니다.</div>
       ) : (
+        <>
+        <p className="timeline-note" style={{ marginTop: 0 }}>
+          여기 순서가 이용자 화면의 시설 목록과 현황표에 그대로 쓰입니다.
+          ↑↓ 로 바꾸세요 (예약 내역은 영향받지 않습니다).
+        </p>
         <table className="admin-table">
           <thead>
             <tr>
+              <th>순서</th>
               <th>사진</th>
               <th>이름</th>
               <th>유형</th>
@@ -184,8 +201,31 @@ export default function FacilitiesPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((f) => (
+            {items.map((f, i) => (
               <tr key={f.id}>
+                <td className="fac-order">
+                  <span className="fac-order-no">{i + 1}</span>
+                  <span className="fac-order-btns">
+                    <button
+                      className="btn btn-check"
+                      onClick={() => move(f, "up")}
+                      disabled={i === 0}
+                      aria-label={`${f.name} 위로`}
+                      title="위로"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="btn btn-check"
+                      onClick={() => move(f, "down")}
+                      disabled={i === items.length - 1}
+                      aria-label={`${f.name} 아래로`}
+                      title="아래로"
+                    >
+                      ↓
+                    </button>
+                  </span>
+                </td>
                 <td>
                   {f.image_url ? (
                     <img src={assetUrl(f.image_url)} alt={f.name} className="fac-thumb" />
@@ -207,6 +247,7 @@ export default function FacilitiesPage() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {editing && (

@@ -741,3 +741,34 @@
         font-size: 0.65rem;
     }
 }
+
+/* --- 시설 표시 순서 바꾸기 ------------------------------------------------ */
+.admin-table td.fac-order {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.fac-order-no {
+    display: inline-block;
+    min-width: 16px;
+    margin-right: 6px;
+    font-weight: 700;
+    color: var(--text-sub);
+}
+
+.fac-order-btns {
+    display: inline-flex;
+    gap: 4px;
+}
+
+/* 화살표만 담는 정사각 버튼 — 표 안에서 폭을 적게 먹게 한다. */
+.fac-order-btns .btn {
+    padding: 2px 7px;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+.fac-order-btns .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
