@@ -230,6 +230,9 @@ export interface WeekGrid {
 export interface CalendarEvent {
   id: number;
   title: string;
+  /** 달력 칸에서 두 줄로 나눠 그리기 위한 조각 (title 은 툴팁·폴백용). */
+  facility_name: string;
+  applicant_name: string;
   start: string;
   end: string;
   color: string;

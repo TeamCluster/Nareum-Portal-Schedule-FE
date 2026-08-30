@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -36,6 +36,8 @@ export default function DashboardPage() {
   const [weekGrid, setWeekGrid] = useState<WeekGrid | null>(null);
   const [notice, setNotice] = useState("");
   const navigate = useNavigate();
+  const calRef = useRef<FullCalendar | null>(null);
+  const calBoxRef = useRef<HTMLDivElement | null>(null);
 
   function loadDay() {
     const q = date ? `?date=${date}` : "";
@@ -60,6 +62,30 @@ export default function DashboardPage() {
   useEffect(() => {
     if (weekAnchor) api.get<WeekGrid>(`/admin/week-grid?date=${weekAnchor}`).then(setWeekGrid);
   }, [weekAnchor]);
+
+  // 사이드바 접기/펼치기는 window resize 를 일으키지 않는다. FullCalendar 는
+  // 그 이벤트로만 폭을 다시 재므로, 그대로 두면 접었을 때 좁은 채로 남고
+  // 펼쳤을 때는 넘쳐서 잘린다. 컨테이너 폭을 직접 관찰해 updateSize() 를 부른다.
+  useEffect(() => {
+    const el = calBoxRef.current;
+    if (calView !== "month" || !el || typeof ResizeObserver === "undefined") return;
+    let lastWidth = el.clientWidth;
+    let frame = 0;
+    const ro = new ResizeObserver(() => {
+      // 폭이 바뀔 때만 (updateSize 가 높이를 바꾸므로 높이까지 보면 무한 루프).
+      const width = el.clientWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      // 사이드바 폭에 0.2s 트랜지션이 걸려 있어 프레임마다 콜백이 온다.
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => calRef.current?.getApi().updateSize());
+    });
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, [calView]);
 
   if (!data) return <div className="spinner" />;
 
@@ -220,21 +246,51 @@ export default function DashboardPage() {
             <div className="spinner" />
           )
         ) : (
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin]}
-            initialView="dayGridMonth"
-            initialDate={weekAnchor || data.selected_date}
-            locale="ko"
-            headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
-            buttonText={{ today: "오늘" }}
-            dayMaxEvents={3}
-            height="auto"
-            events={events.map((e) => ({ ...e, id: String(e.id) }))}
-            eventClick={(info) => {
-              info.jsEvent.preventDefault();
-              navigate(`${base}/manage/edit/${info.event.id}`);
-            }}
-          />
+          <div ref={calBoxRef}>
+            <FullCalendar
+              ref={calRef}
+              plugins={[dayGridPlugin, timeGridPlugin]}
+              initialView="dayGridMonth"
+              initialDate={weekAnchor || data.selected_date}
+              locale="ko"
+              headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+              buttonText={{ today: "오늘" }}
+              dayMaxEvents={3}
+              height="auto"
+              // 기본값은 '오후 3시'(meridiem + 정각이면 분 생략). 09:00 / 15:00 처럼
+              // 0 을 채운 24시간 두 자리로 맞춘다.
+              eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+              events={events.map((e) => ({ ...e, id: String(e.id) }))}
+              // 기본 렌더는 '점 시각 [시설] 이름' 한 줄이라 칸 폭을 넘긴다.
+              // 시설명(작게) / 신청자명 두 줄로 직접 그린다.
+              // 커스텀 content 는 기본 점까지 대체하므로 점도 함께 그린다.
+              eventContent={(arg) => {
+                const { facility_name, applicant_name } = arg.event.extendedProps as {
+                  facility_name?: string;
+                  applicant_name?: string;
+                };
+                return (
+                  <>
+                    <span
+                      className="ev-dot"
+                      style={{ borderColor: arg.borderColor || arg.backgroundColor }}
+                    />
+                    <span className="ev-body">
+                      <span className="ev-sub">
+                        {arg.timeText}
+                        {facility_name ? ` [${facility_name}]` : ""}
+                      </span>
+                      <span className="ev-name">{applicant_name || arg.event.title}</span>
+                    </span>
+                  </>
+                );
+              }}
+              eventClick={(info) => {
+                info.jsEvent.preventDefault();
+                navigate(`${base}/manage/edit/${info.event.id}`);
+              }}
+            />
+          </div>
         )}
       </div>
     </>
