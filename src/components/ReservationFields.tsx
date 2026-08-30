@@ -188,6 +188,15 @@ export default function ReservationFields({
         <h4>이용 인원 (총 {participantTotal(value.participants)}명)</h4>
         <div className="participant-table-wrap">
           <table className="participant-table">
+            {/* 열 폭을 여기서 못 박는다 (table-layout: fixed).
+                남/여 칸을 좁혀 '계' 열이 눌리지 않게 하기 위함. */}
+            <colgroup>
+              <col className="col-head" />
+              {PARTICIPANT_BANDS.map((b) =>
+                GENDERS.map((g) => <col key={`col-${b.key}-${g.key}`} className="col-count" />),
+              )}
+              <col className="col-total" />
+            </colgroup>
             <thead>
               <tr>
                 <th />

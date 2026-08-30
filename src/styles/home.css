@@ -139,7 +139,13 @@
     flex-shrink: 0;
 }
 
-.sw.available,
+/* 시설 카드의 시간대 견본 — '예약가능'은 초록. */
+.sw.available {
+    background: #cfeeda;
+    border-color: #a6ddbc;
+}
+
+/* 달력의 '예약가능일'은 날짜 칸 색과 맞춰 파랑을 유지한다. */
 .sw.open {
     background: #d8e9ff;
     border-color: #b7d5fb;
@@ -294,9 +300,9 @@
 }
 
 .status-slot.available {
-    background: #d8e9ff;
-    border-color: #b7d5fb;
-    color: #1d4ed8;
+    background: #e3f6ea;
+    border-color: #a6ddbc;
+    color: #1c6b41;
 }
 
 .status-slot.booked {

@@ -239,16 +239,32 @@ textarea:focus {
     display: flex;
     justify-content: space-between;
     margin-bottom: 6px;
-    padding: 0 1px;
+    /* 아래 타임라인 바의 1.5px 테두리만큼 좌우를 비워, 눈금 기준선이 바의
+       '내부 폭'(= 시간 칸이 실제로 나뉘는 영역)과 정확히 겹치게 한다. */
+    padding: 0 1.5px;
 }
 
 .timeline-label {
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--text-sub);
+    /* 폭 0 인 항목 N+1 개를 space-between 으로 두면 각 라벨의 중심이
+       0, 1/N, 2/N … 1 지점 — 즉 시간 칸의 양 옆 변 — 에 정확히 놓인다.
+       (flex-basis 가 0 이 아니면 칸 '가운데'로 밀려 어긋난다.) */
+    flex: 0 0 0;
     width: 0;
     display: flex;
     justify-content: center;
+    white-space: nowrap;
+}
+
+/* 양 끝 라벨만 안쪽으로 붙여 컨테이너 밖으로 잘려나가지 않게 한다. */
+.timeline-label:first-child {
+    justify-content: flex-start;
+}
+
+.timeline-label:last-child {
+    justify-content: flex-end;
 }
 
 .timeline-bar {
@@ -291,6 +307,16 @@ textarea:focus {
 
 .time-slot-block {
     background-color: #ffffff;
+}
+
+/* 예약 가능(초록) — 비어 있는 칸임을 한눈에 보여준다. */
+.time-slot-block.available {
+    background-color: #e3f6ea;
+    color: #22703f;
+}
+
+.time-slot-block.available:hover {
+    background-color: #cfeeda;
 }
 
 .time-slot-block.booked {

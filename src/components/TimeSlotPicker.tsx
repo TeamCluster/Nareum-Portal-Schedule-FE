@@ -98,9 +98,11 @@ export default function TimeSlotPicker({
           const isBooked = booked.has(h);
           const isBlocked = !isBooked && blocked.has(h);
           const isSelected = selected.has(h);
+          // 비어 있고 지금 고를 수 있는 칸만 초록으로 — '예약 가능'을 색으로 바로 읽히게 한다.
+          const isAvailable = !isBooked && !isBlocked && !isSelected && !disabled;
           const cls = `time-slot-block${isBooked ? " booked" : ""}${
             isBlocked ? " blocked" : ""
-          }${isSelected ? " selected" : ""}`;
+          }${isSelected ? " selected" : ""}${isAvailable ? " available" : ""}`;
           return (
             <div
               key={h}

@@ -62,10 +62,25 @@ a {
 
 .participant-table {
   border-collapse: collapse;
+  /* colgroup 의 폭을 그대로 쓰기 위한 고정 레이아웃. auto 였을 때는 남/여 칸이
+     입력 상자 최소폭까지 부풀고 '계' 열만 글자 폭으로 쪼그라들었다. */
+  table-layout: fixed;
   width: 100%;
-  min-width: 560px;
+  min-width: 540px;
   text-align: center;
   font-size: 0.85rem;
+}
+
+.participant-table .col-head {
+  width: 74px;
+}
+
+.participant-table .col-count {
+  width: 40px;
+}
+
+.participant-table .col-total {
+  width: 62px;
 }
 
 .participant-table th,
@@ -93,7 +108,7 @@ a {
 
 .participant-table input {
   width: 100%;
-  min-width: 44px;
+  min-width: 0;
   border: none;
   background: transparent;
   text-align: center;
@@ -162,10 +177,6 @@ a {
   display: flex;
   gap: 12px;
   margin-top: 8px;
-}
-
-.timeline-scale .timeline-label {
-  flex: 1;
 }
 
 /* Timeline note */
