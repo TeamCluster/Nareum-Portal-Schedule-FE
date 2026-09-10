@@ -50,7 +50,7 @@ export default function WeekGrid({
             <th className="wg-hour" rowSpan={2}>시간</th>
             {days.map((day, di) => (
               <th key={di} colSpan={nFac || 1}
-                  className={`wg-day${day.is_open ? "" : " closed"}`}>
+                  className={`wg-day${day.is_open ? "" : " closed"}${di > 0 ? " wg-dsep" : ""}`}>
                 {dayLabel(day.date, di)}
                 {!day.is_open && <span className="wg-day-badge">휴무</span>}
               </th>
@@ -58,8 +58,8 @@ export default function WeekGrid({
           </tr>
           <tr>
             {days.map((_, di) =>
-              facilities.map((f) => (
-                <th key={`${di}-${f.id}`} className="wg-fac" title={f.name}>
+              facilities.map((f, fi) => (
+                <th key={`${di}-${f.id}`} className={`wg-fac${fi === 0 && di > 0 ? " wg-dsep" : ""}`} title={f.name}>
                   <span>{f.name}</span>
                 </th>
               )),
@@ -76,20 +76,22 @@ export default function WeekGrid({
                   if (h !== hour_min) return null;
                   return (
                     <td key={`closed-${di}`} colSpan={nFac} rowSpan={hours.length}
-                        className="wg-cell wg-closed"
+                        className={`wg-cell wg-closed${di > 0 ? " wg-dsep" : ""}`}
                         title={day.closed_reason ? `휴무 (${day.closed_reason})` : "휴무"}>
                       휴무{day.closed_reason ? ` (${day.closed_reason})` : ""}
                     </td>
                   );
                 }
-                return facilities.map((f) => {
+                return facilities.map((f, fi) => {
+                  // 요일 첫 시설 열 = 일자 구분선(첫 요일은 시간 열과 맞닿아 있어 제외)
+                  const sep = fi === 0 && di > 0 ? " wg-dsep" : "";
                   const col = cols[di].get(f.id);
                   const seg = col?.startMap.get(h);
                   if (seg && seg.type !== "free") {
                     const span = seg.to_hour - seg.from_hour;
                     if (seg.type === "block") {
                       return (
-                        <td key={`${di}-${f.id}`} rowSpan={span} className="wg-cell block"
+                        <td key={`${di}-${f.id}`} rowSpan={span} className={`wg-cell block${sep}`}
                             title={`${f.name} · ${seg.title} · ${seg.from_hour}:00~${seg.to_hour}:00 · 정기활동(${recurringKindLabel(seg.kind)})`}>
                           <span className="wg-txt">{seg.title || "정기"}</span>
                         </td>
@@ -97,7 +99,7 @@ export default function WeekGrid({
                     }
                     return (
                       <td key={`${di}-${f.id}`} rowSpan={span}
-                          className={`wg-cell res ${seg.status}`}
+                          className={`wg-cell res ${seg.status}${sep}`}
                           onClick={() => onPick(seg.res_id)}
                           title={`${f.name} · ${seg.name} · ${seg.from_hour}:00~${seg.to_hour}:00 · ${seg.status === "confirmed" ? "확정" : "대기"}`}>
                         <span className="wg-txt">{seg.name}</span>
@@ -106,7 +108,7 @@ export default function WeekGrid({
                   }
                   if (col?.covered.has(h)) return null; // 위 rowSpan 이 덮음
                   const off = h < day.open_hour || h >= day.close_hour;
-                  return <td key={`${di}-${f.id}`} className={`wg-cell ${off ? "off" : "free"}`} />;
+                  return <td key={`${di}-${f.id}`} className={`wg-cell ${off ? "off" : "free"}${sep}`} />;
                 });
               })}
             </tr>

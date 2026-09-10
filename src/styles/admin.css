@@ -517,8 +517,9 @@
     z-index: 1;
 }
 
-.week-grid th.wg-day {
-    border-left: 2px solid var(--border-color);
+/* 일자 구분선: 요일 경계(둘째 요일부터)의 왼쪽에 굵은 세로선 */
+.week-grid .wg-dsep {
+    border-left: 3px solid #94a3b8;
 }
 
 .week-grid th.wg-day.closed {
